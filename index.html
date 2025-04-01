@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House - Sistema de Gerenciamento de Pokémons</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-left">
+                <button id="menuToggle" class="menu-toggle" aria-label="Menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <h1 class="logo">Pokes da House</h1>
+            </div>
+            <div class="header-right">
+                <button id="historyButton" class="history-button" aria-label="Histórico">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>Histórico</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Menu Overlay -->
+    <div id="menuOverlay" class="menu-overlay"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2>Clãs Pokémon</h2>
+            <button id="closeMenu" class="close-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li><button data-clan="home" class="clan-button active">Início</button></li>
+                <li><button data-clan="malefic" class="clan-button">Malefic <span class="clan-elements">Dark, Ghost, Venom</span></button></li>
+                <li><button data-clan="wingeon" class="clan-button">Wingeon <span class="clan-elements">Flying, Dragon</span></button></li>
+                <li><button data-clan="ironhard" class="clan-button">Ironhard <span class="clan-elements">Metal, Crystal</span></button></li>
+                <li><button data-clan="volcanic" class="clan-button">Volcanic <span class="clan-elements">Fire</span></button></li>
+                <li><button data-clan="seavell" class="clan-button">Seavell <span class="clan-elements">Water, Ice</span></button></li>
+                <li><button data-clan="gardestrike" class="clan-button">Gardestrike <span class="clan-elements">Fighting, Normal</span></button></li>
+                <li><button data-clan="orebound" class="clan-button">Orebound <span class="clan-elements">Rock, Earth</span></button></li>
+                <li><button data-clan="naturia" class="clan-button">Naturia <span class="clan-elements">Grass, Bug</span></button></li>
+                <li><button data-clan="psycraft" class="clan-button">Psycraft <span class="clan-elements">Psychic, Fairy</span></button></li>
+                <li><button data-clan="raibolt" class="clan-button">Raibolt <span class="clan-elements">Electric</span></button></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Home Section -->
+            <section id="home-section" class="section">
+                <div class="welcome-banner">
+                    <div class="welcome-content">
+                        <h2>Bem-vindo!</h2>
+                        <p>Este site é um sistema de gerenciamento de Pokémons para a mansão do Raito.</p>
+                        <div class="welcome-actions">
+                            <button id="exploreButton" class="primary-button">Explorar Clãs</button>
+                            <button id="viewActiveButton" class="secondary-button">Ver Pokémons em Uso</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="instructions-card">
+                    <h3>Como utilizar o sistema</h3>
+                    <ol>
+                        <li>Selecione um clã no menu lateral para visualizar os Pokémons disponíveis.</li>
+                        <li>Adicione os Pokémons que deseja utilizar clicando no botão <strong>+</strong>.</li>
+                        <li>Insira seu nome e confirme para registrar o uso dos Pokémons.</li>
+                        <li>Para devolver, acesse o histórico ou a lista de Pokémons em uso.</li>
+                        <li>Você pode devolver todos os Pokémons ou apenas alguns específicos.</li>
+                    </ol>
+                </div>
+
+                <div class="clan-cards">
+                    <h3>Clãs Disponíveis</h3>
+                    <div class="clan-grid">
+                        <div class="clan-card malefic-card" data-clan="malefic">
+                            <div class="clan-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path></svg>
+                            </div>
+                            <h4>Malefic</h4>
+                            <p>Dark, Ghost, Venom</p>
+                        </div>
+                        <div class="clan-card wingeon-card" data-clan="wingeon">
+                            <div class="clan-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path></svg>
+                            </div>
+                            <h4>Wingeon</h4>
+                            <p>Flying, Dragon</p>
+                        </div>
+                        <div class="clan-card ironhard-card" data-clan="ironhard">
+                            <div class="clan-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path></svg>
+                            </div>
+                            <h4>Ironhard</h4>
+                            <p>Metal, Crystal</p>
+                        </div>
+                        <div class="clan-card volcanic-card" data-clan="volcanic">
+                            <div class="clan-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path></svg>
+                            </div>
+                            <h4>Volcanic</h4>
+                            <p>Fire</p>
+                        </div>
+                        <div class="clan-card seavell-card" data-clan="seavell">
+                            <div class="clan-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path></svg>
+                            </div>
+                            <h4>Seavell</h4>
+                            <p>Water, Ice</p>
+                        </div>
+                        <div class="clan-card gardestrike-card" data-clan="gardestrike">
+                            <div class="clan-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path></svg>
+                            </div>
+                            <h4>Gardestrike</h4>
+                            <p>Fighting, Normal</p>
+                        </div>
+                        <div class="clan-card orebound-card" data-clan="orebound">
+                            <div class="clan-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path></svg>
+                            </div>
+                            <h4>Orebound</h4>
+                            <p>Rock, Earth</p>
+                        </div>
+                        <div class="clan-card naturia-card" data-clan="naturia">
+                            <div class="clan-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path></svg>
+                            </div>
+                            <h4>Naturia</h4>
+                            <p>Grass, Bug</p>
+                        </div>
+                        <div class="clan-card psycraft-card" data-clan="psycraft">
+                            <div class="clan-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path></svg>
+                            </div>
+                            <h4>Psycraft</h4>
+                            <p>Psychic, Fairy</p>
+                        </div>
+                        <div class="clan-card raibolt-card" data-clan="raibolt">
+                            <div class="clan-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path></svg>
+                            </div>
+                            <h4>Raibolt</h4>
+                            <p>Electric</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="active-pokemons">
+                    <h3>Pokémons em Uso</h3>
+                    <div id="activePokemonsList" class="active-pokemons-list">
+                        <!-- Lista de Pokémons em uso será carregada aqui -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Clan Section (initially hidden) -->
+            <section id="clan-section" class="section hidden">
+                <div class="container">
+                    <div class="clan-header">
+                        <div class="clan-info">
+                            <h2 id="clan-title">Clã</h2>
+                            <span id="clan-elements" class="clan-elements-tag">Elementos</span>
+                        </div>
+                        <button id="backToHome" class="back-button">
+                            Voltar
+                        </button>
+                    </div>
+            
+                    <!-- Botão "Bag Inteira" e "Adicionar Pokémon" -->
+                    <div class="clan-actions">
+                        <button id="selectEntireBag" class="primary-button">Adicionar Tudo</button>
+                        
+                    </div>
+            
+                    <!-- Pokémon Selection -->
+                    <div id="pokemon-selection" class="pokemon-selection">
+                        <!-- Aqui serão renderizados os Pokémons do clã -->
+                    </div>
+            
+                    <!-- Empty Clan Message -->
+                    <div id="empty-clan" class="empty-clan hidden">
+                        <svg>...</svg>
+                        <h3>Nenhum Pokémon disponível</h3>
+                        <p>Este clã não possui Pokémons cadastrados no momento.</p>
+                    </div>
+            
+                    <!-- Trainer Input -->
+                    <div class="trainer-input">
+                        <input id="trainerName" type="text" placeholder="Digite seu nome">
+                        <button id="confirmSelection" class="confirm-button">Confirmar Seleção</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal de erro -->
+<div id="errorModal" class="modal">
+    <div class="modal-overlay" onclick="closeErrorModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Erro</h2>
+            <button class="close-button" onclick="closeErrorModal()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>Por favor, insira o nome do Pokémon.</p>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeErrorModal()" class="primary-button">Fechar</button>
+        </div>
+    </div>
+</div>
+
+    <!-- Botão de adicionar Pokémon -->
+<button id="addPokemonButton" class="add-pokemon-button">
+    +
+</button>
+
+<div id="loadingSpinner" class="loading-spinner hidden">
+    <div class="spinner"></div>
+</div>
+
+<div id="addPokemonModal" class="modal">
+    <div class="modal-overlay" onclick="closeAddPokemonModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Adicionar Pokémon</h2>
+            <button class="close-button" onclick="closeAddPokemonModal()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="addPokemonForm" class="form-container">
+                <div class="form-group">
+                    <label for="newPokemonName">Nome do Pokémon</label>
+                    <input type="text" id="newPokemonName" placeholder="Digite o nome do Pokémon" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPokemonItem">Item (opcional)</label>
+                    <input type="text" id="newPokemonItem" placeholder="Digite o item do Pokémon">
+                </div>
+                <div class="form-group">
+                    <label for="clanSelect">Selecione o Clã</label>
+                    <select id="clanSelect" required>
+                        <!-- Os clãs serão carregados dinamicamente aqui -->
+                    </select>
+                </div>
+               
+                <div class="form-actions">
+                    <button type="submit" class="primary-button">Adicionar</button>
+                    <button type="button" class="secondary-button" onclick="closeAddPokemonModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+    <!-- Modal para devolução parcial -->
+    <div id="partialReturnModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Devolução Parcial</h2>
+                <button class="close-button" onclick="closePartialReturnModal()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Selecione os Pokémons que deseja devolver:</p>
+                <div id="partialReturnList" class="partial-return-list">
+                    <!-- Lista de Pokémons para devolução parcial será carregada aqui -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmPartialReturn" class="primary-button">Confirmar Devolução</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de histórico -->
+    <div id="historyModal" class="modal">
+        <div class="modal-overlay" onclick="closeHistoryModal()"></div>
+        <div class="modal-content history-modal-content">
+            <div class="modal-header">
+                <h2>Histórico de Uso</h2>
+                <button onclick="closeHistoryModal()" class="close-button">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Filtros e busca -->
+                <div class="history-filters">
+                    <input id="historySearch" type="text" class="history-search" placeholder="Buscar...">
+                    <select id="historyFilter" class="history-filter">
+                        <option value="all">Todos</option>
+                        <option value="active">Em uso</option>
+                        <option value="returned">Devolvidos</option>
+                    </select>
+                </div>
+
+                <!-- Botão "Deletar Tudo" -->
+                <button id="delete-all-history-button" class="delete-all-button">Deletar Tudo</button>
+
+                <!-- Lista de histórico -->
+                <div id="historyList" class="history-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
