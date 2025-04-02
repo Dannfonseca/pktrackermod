@@ -1,123 +1,262 @@
-// js/app.js
-import { state } from './state.js';
-import { elements } from './domElements.js';
-import { CONFIG } from './config.js';
-import * as UI from './ui.js';
-import * as ClanView from './clanView.js';
-import * as HomeView from './homeView.js';
-import * as History from './history.js';
-import * as Modals from './modals.js';
+// TODOLISTPOKEMON/js/app.js
+/**
+ * Orquestrador principal da aplicação frontend.
+ * Responsável por inicializar a aplicação, configurar os event listeners globais
+ * para elementos da UI (menu, botões, modais) e gerenciar a troca entre
+ * as visualizações principal (home) e de clãs específicos.
+ *
+ * Funções Principais:
+ * - initializeApp: Ponto de entrada, aguarda o DOM carregar e chama runInitialization.
+ * - runInitialization: Configura listeners e carrega a view inicial.
+ * - setupEventListeners: Mapeia todos os eventos de clique, submit, change, etc., para as funções apropriadas nos outros módulos (ui.js, clanView.js, homeView.js, history.js, modals.js). Usa event delegation quando apropriado.
+ * - switchView: Controla qual seção (home ou clã) é exibida, atualiza o estado, estilos e carrega os dados necessários para a view.
+ */
+import { dom } from './domElements.js';
+import { getState, setCurrentClan } from './state.js';
+import { updateClanStyles, toggleSidebar, closeSidebar, checkScreenSize, displayError } from './ui.js';
+import { loadClanView, handleTogglePokemonSelection, handleSelectEntireBag, handleConfirmSelection, handleDeletePokemon } from './clanView.js';
+import { loadHomeView, renderActivePokemons, handleOpenReturnModal } from './homeView.js';
 
-/** Binds all event listeners to their respective handlers */
-function bindEvents() {
-    // --- Sidebar & General UI ---
-    elements.menuToggle?.addEventListener('click', UI.toggleSidebar);
-    elements.closeMenu?.addEventListener('click', UI.closeSidebar);
-    elements.menuOverlay?.addEventListener('click', UI.closeSidebar);
-    window.addEventListener('resize', UI.checkScreenSize);
+import { openHistoryModal, closeHistoryModal, filterAndRenderHistory, handleDeleteHistoryGroup, handleDeleteAllHistory } from './history.js';
+import { openAddPokemonModal, closeAddPokemonModal, handleAddPokemonFormSubmit, closePartialReturnModal, handleTogglePartialReturn, handleConfirmPartialReturn } from './modals.js';
 
-    // --- Navigation ---
-    elements.logo?.addEventListener('click', () => navigateTo('home'));
-    elements.backToHomeButton?.addEventListener('click', () => navigateTo('home'));
-    // Sidebar navigation (delegation)
-    elements.sidebarNav?.addEventListener('click', (event) => {
-        if (event.target.matches('.clan-button')) {
-            navigateTo(event.target.dataset.clan);
-        }
-    });
-    // Home clan cards navigation (delegation)
-    elements.clanCardsContainer?.addEventListener('click', (event) => {
-        const card = event.target.closest('.clan-card');
-        if (card) {
-            navigateTo(card.dataset.clan);
-        }
-    });
-    elements.exploreButton?.addEventListener('click', () => {
-        if (window.innerWidth < 768) UI.toggleSidebar();
-        else navigateTo(Object.keys(CONFIG.CLAN_DATA)[0]); // Navigate to first clan
-    });
-    elements.viewActiveButton?.addEventListener('click', () => {
-        elements.activePokemonsList?.scrollIntoView({ behavior: 'smooth' });
-    });
 
-    // --- Clan View Actions ---
-    elements.selectEntireBagButton?.addEventListener('click', ClanView.handleSelectEntireBag);
-    elements.confirmSelectionButton?.addEventListener('click', ClanView.confirmLoan);
-    // Pokémon item actions (delegation)
-    elements.pokemonSelectionContainer?.addEventListener('click', ClanView.handleItemClick);
 
-    // --- Home View Actions (Return Button - delegation) ---
-     elements.activePokemonsList?.addEventListener('click', (event) => {
-         const returnButton = event.target.closest('.return-loan-group-button');
-         if (returnButton && returnButton.dataset.action === 'open-return-modal') {
-             Modals.openPartialReturnModal(returnButton.dataset.trainer, returnButton.dataset.date);
-         }
-     });
 
-    // --- Modal Triggers ---
-    elements.addPokemonButton?.addEventListener('click', Modals.openAddPokemonModal);
-    elements.historyButton?.addEventListener('click', History.openModal);
 
-    // --- History Modal Actions ---
-    elements.historySearchInput?.addEventListener('input', History.render);
-    elements.historyFilterSelect?.addEventListener('change', History.render);
-    elements.deleteAllHistoryButton?.addEventListener('click', History.deleteAll);
-    // History item delete action (delegation)
-    elements.historyListContainer?.addEventListener('click', (event) => {
-         const deleteButton = event.target.closest('.delete-history-group-button');
-         if (deleteButton && deleteButton.dataset.action === 'delete-history-group') {
-             History.deleteItemGroup(deleteButton.dataset.trainer, deleteButton.dataset.date);
-         }
-     });
-    elements.historyModalCloseButton?.addEventListener('click', History.closeModal);
-    elements.historyModalOverlay?.addEventListener('click', History.closeModal);
+export function switchView(viewName) {
+    console.log(`Mudando para view: ${viewName}`);
 
-    // --- Add Pokémon Modal Actions ---
-    elements.addPokemonForm?.addEventListener('submit', (e) => {
-        e.preventDefault(); // Prevent default form submission
-        Modals.handleAddPokemonSubmit();
-    });
-    elements.addPokemonModalCloseButton?.addEventListener('click', Modals.closeAddPokemonModal);
-    elements.addPokemonModalCancelButton?.addEventListener('click', Modals.closeAddPokemonModal);
 
-    // --- Partial Return Modal Actions ---
-    elements.confirmPartialReturnButton?.addEventListener('click', Modals.confirmPartialReturn);
-    elements.partialReturnModalCloseButton?.addEventListener('click', Modals.closePartialReturnModal);
 
-    console.log("Event Listeners Bound");
-}
 
-/** Handles navigation between views */
-export function navigateTo(clanId) {
-    console.log(`App Navigating to: ${clanId}`);
-    state.currentClan = clanId;
-    state.selectedPokemons = {}; // Reset selection on any navigation
+    const isClanView = viewName !== 'home';
 
-    // Update view sections visibility and content
-    if (clanId === 'home') {
-        elements.homeSection?.classList.remove('hidden');
-        elements.clanSection?.classList.add('hidden');
-        HomeView.renderActivePokemons(); // Render active Pokémon for home
-    } else {
-        elements.homeSection?.classList.add('hidden');
-        elements.clanSection?.classList.remove('hidden');
-        ClanView.updateHeader(clanId);    // Update title/elements for clan view
-        ClanView.loadPokemons(clanId);     // Load Pokémon for clan view
+
+    setCurrentClan(viewName);
+
+
+    try {
+        dom.homeSection.classList.toggle('hidden', isClanView);
+        dom.clanSection.classList.toggle('hidden', !isClanView);
+    } catch (e) {
+        console.error("Erro ao alternar visibilidade das seções:", e);
+
+        displayError("Erro ao carregar a interface. Verifique o console.");
+        return;
     }
 
-    UI.updateSidebarActiveState(clanId); // Update sidebar style
-    if (window.innerWidth < 768) UI.closeSidebar(); // Close mobile sidebar
+
+
+    updateClanStyles(viewName);
+
+
+    if (isClanView) {
+
+        loadClanView(viewName).catch(error => {
+             console.error(`Erro ao carregar view do clã ${viewName}:`, error);
+             displayError(`Não foi possível carregar os dados do clã ${viewName}.`);
+             switchView('home');
+        });
+    } else {
+
+        loadHomeView().catch(error => {
+             console.error("Erro ao carregar view da home:", error);
+             displayError("Não foi possível carregar a página inicial.");
+
+        });
+    }
+
+
+    if (window.innerWidth < 768) {
+        closeSidebar();
+    }
+
+
+    window.scrollTo(0, 0);
 }
 
-/** Initializes the application */
-function init() {
-    UI.cacheDOMElements(); // Cache elements first
-    bindEvents();          // Then bind events to them
-    UI.updateClanUIStyles(); // Set initial styles
-    navigateTo('home');    // Navigate to the initial view
-    UI.checkScreenSize();  // Check initial screen size
-    console.log("App Initialized (Modular)");
+
+
+
+function setupEventListeners() {
+    console.log("Configurando event listeners...");
+
+
+    if (!dom.menuToggle) console.error("Elemento DOM 'menuToggle' não encontrado!");
+    if (!dom.logo) console.error("Elemento DOM 'logo' não encontrado!");
+
+
+
+    if (dom.menuToggle) dom.menuToggle.addEventListener('click', toggleSidebar);
+    if (dom.logo) dom.logo.addEventListener('click', () => switchView('home'));
+    if (dom.historyButton) dom.historyButton.addEventListener('click', openHistoryModal);
+
+
+    if (dom.closeMenu) dom.closeMenu.addEventListener('click', closeSidebar);
+    if (dom.menuOverlay) dom.menuOverlay.addEventListener('click', closeSidebar);
+    if (dom.clanButtons) {
+        dom.clanButtons.forEach(button => {
+            if (button) {
+                button.addEventListener('click', () => switchView(button.dataset.clan));
+            }
+        });
+    } else {
+        console.error("Elementos DOM 'clanButtons' não encontrados!");
+    }
+
+
+
+    if (dom.exploreButton) {
+        dom.exploreButton.addEventListener('click', () => {
+            if (window.innerWidth < 768) {
+                toggleSidebar();
+            } else {
+                switchView('malefic');
+            }
+        });
+    }
+    if (dom.viewActiveButton) {
+        dom.viewActiveButton.addEventListener('click', () => {
+            if(dom.activePokemonsList) {
+                 dom.activePokemonsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                console.error("Elemento 'activePokemonsList' não encontrado para scroll.");
+            }
+        });
+    }
+    if (dom.clanCards) {
+        dom.clanCards.forEach(card => {
+           if(card) card.addEventListener('click', () => switchView(card.dataset.clan));
+        });
+    }
+
+    if(dom.activePokemonsList) {
+        dom.activePokemonsList.addEventListener('click', (event) => {
+            const returnButton = event.target.closest('.return-button[data-action="open-return-modal"]');
+            if (returnButton) {
+                handleOpenReturnModal(returnButton);
+            }
+        });
+    } else {
+         console.error("Container 'activePokemonsList' não encontrado para event delegation.");
+    }
+
+
+
+    if(dom.backToHome) dom.backToHome.addEventListener('click', () => switchView('home'));
+    if(dom.selectEntireBagButton) dom.selectEntireBagButton.addEventListener('click', handleSelectEntireBag);
+    if(dom.confirmSelectionButton) dom.confirmSelectionButton.addEventListener('click', handleConfirmSelection);
+
+     if(dom.pokemonSelectionContainer) {
+        dom.pokemonSelectionContainer.addEventListener('click', (event) => {
+            const selectButton = event.target.closest('.select-button[data-action="toggle-select"]');
+            const deleteButton = event.target.closest('.delete-button[data-action="delete-pokemon"]');
+
+            if (selectButton) {
+                handleTogglePokemonSelection(selectButton);
+            } else if (deleteButton) {
+                handleDeletePokemon(deleteButton);
+            }
+        });
+     } else {
+          console.error("Container 'pokemonSelectionContainer' não encontrado para event delegation.");
+     }
+
+
+
+    if(dom.addPokemonButton) dom.addPokemonButton.addEventListener('click', openAddPokemonModal);
+    if(dom.addPokemonModal) {
+        const closeBtn = dom.addPokemonModal.querySelector('.close-button');
+        const overlay = dom.addPokemonModal.querySelector('.modal-overlay');
+        const cancelBtn = dom.addPokemonModal.querySelector('.secondary-button[type="button"]');
+
+        if(closeBtn) closeBtn.addEventListener('click', closeAddPokemonModal);
+        if(overlay) overlay.addEventListener('click', closeAddPokemonModal);
+        if(cancelBtn) cancelBtn.addEventListener('click', closeAddPokemonModal);
+    } else {
+        console.error("Modal 'addPokemonModal' não encontrado.");
+    }
+    if(dom.addPokemonForm) dom.addPokemonForm.addEventListener('submit', handleAddPokemonFormSubmit);
+
+
+
+    if(dom.partialReturnModal) {
+        const closeBtn = dom.partialReturnModal.querySelector('.close-button');
+        if(closeBtn) closeBtn.addEventListener('click', closePartialReturnModal);
+
+    } else {
+         console.error("Modal 'partialReturnModal' não encontrado.");
+    }
+    if(dom.confirmPartialReturnButton) dom.confirmPartialReturnButton.addEventListener('click', handleConfirmPartialReturn);
+    if(dom.partialReturnListContainer) {
+        dom.partialReturnListContainer.addEventListener('change', (event) => {
+            const checkbox = event.target.closest('input[type="checkbox"][data-action="toggle-partial-return"]');
+            if (checkbox) { handleTogglePartialReturn(checkbox); }
+        });
+    } else {
+        console.error("Container 'partialReturnListContainer' não encontrado.");
+    }
+
+
+
+    if(dom.historyModal) {
+        const historyModalCloseButton = dom.historyModal.querySelector('.close-button');
+        const historyModalOverlay = dom.historyModal.querySelector('.modal-overlay');
+
+
+        if (historyModalCloseButton) {
+             historyModalCloseButton.addEventListener('click', closeHistoryModal);
+        } else {
+             console.error("Botão de fechar do modal de histórico não encontrado.");
+        }
+        if (historyModalOverlay) {
+             historyModalOverlay.addEventListener('click', closeHistoryModal);
+        } else {
+             console.error("Overlay do modal de histórico não encontrado.");
+        }
+    } else {
+         console.error("Modal 'historyModal' não encontrado.");
+    }
+
+    if(dom.historySearchInput) dom.historySearchInput.addEventListener('input', filterAndRenderHistory);
+    if(dom.historyFilterSelect) dom.historyFilterSelect.addEventListener('change', filterAndRenderHistory);
+    if(dom.deleteAllHistoryButton) dom.deleteAllHistoryButton.addEventListener('click', handleDeleteAllHistory);
+    if(dom.historyListContainer) {
+         dom.historyListContainer.addEventListener('click', (event) => {
+            const deleteButton = event.target.closest('.delete-button[data-action="delete-history-group"]');
+            if (deleteButton) { handleDeleteHistoryGroup(deleteButton); }
+         });
+    } else {
+         console.error("Container 'historyListContainer' não encontrado.");
+    }
+
+
+    window.addEventListener('resize', checkScreenSize);
+
+    console.log("Event listeners configurados.");
 }
 
-// --- Start the App ---
-document.addEventListener('DOMContentLoaded', init);
+
+
+function initializeApp() {
+    console.log("Inicializando aplicação...");
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', runInitialization);
+    } else {
+        runInitialization();
+    }
+}
+
+function runInitialization() {
+    console.log("DOM carregado, executando inicialização...");
+    setupEventListeners();
+    checkScreenSize();
+    switchView('home');
+
+    console.log("Aplicação inicializada.");
+}
+
+
+initializeApp();

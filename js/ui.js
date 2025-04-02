@@ -1,175 +1,191 @@
-// js/ui.js
-import { elements } from './domElements.js';
-import { CONFIG } from './config.js';
-import { state } from './state.js';
-
+// TODOLISTPOKEMON/js/ui.js
 /**
- * Populates the `elements` object with references to DOM nodes.
- * Should be called after DOMContentLoaded.
+ * Funções gerais de manipulação da Interface do Usuário (UI).
+ * Inclui controle de visibilidade do spinner de carregamento,
+ * abertura/fechamento da sidebar (menu lateral), atualização dinâmica
+ * de estilos (cores de clãs), exibição de mensagens de erro/sucesso,
+ * ajuste da UI baseado no tamanho da tela e formatação de datas.
+ *
+ * Funções Principais:
+ * - showSpinner / hideSpinner: Controlam o overlay de carregamento.
+ * - toggleSidebar / closeSidebar: Gerenciam a exibição da sidebar em mobile.
+ * - updateClanStyles: Aplica cores e estilos específicos do clã ativo na UI.
+ * - checkScreenSize: Ajusta a sidebar em redimensionamentos (desktop vs mobile).
+ * - displayError / displaySuccess: Exibe mensagens ao usuário (atualmente via alert).
+ * - formatBrazilianDate: Formata datas ISO para o padrão DD/MM/AAAA HH:MM:SS (fuso SP).
  */
-export function cacheDOMElements() {
-    const selectors = {
-        menuToggle: '#menuToggle',
-        closeMenu: '#closeMenu',
-        sidebar: '#sidebar',
-        menuOverlay: '#menuOverlay',
-        logo: '.logo',
-        sidebarNav: '.sidebar-nav ul',
-        homeSection: '#home-section',
-        clanSection: '#clan-section',
-        exploreButton: '#exploreButton',
-        viewActiveButton: '#viewActiveButton',
-        activePokemonsList: '#activePokemonsList',
-        clanCardsContainer: '.clan-grid',
-        clanTitle: '#clan-title',
-        clanElementsTag: '#clan-elements',
-        backToHomeButton: '#backToHome',
-        selectEntireBagButton: '#selectEntireBag',
-        pokemonSelectionContainer: '#pokemon-selection',
-        emptyClanMessage: '#empty-clan',
-        trainerNameInput: '#trainerName',
-        confirmSelectionButton: '#confirmSelection',
-        errorModal: '#errorModal',
-        addPokemonModal: '#addPokemonModal',
-        partialReturnModal: '#partialReturnModal',
-        historyModal: '#historyModal',
-        addPokemonButton: '#addPokemonButton',
-        addPokemonForm: '#addPokemonForm',
-        newPokemonNameInput: '#newPokemonName',
-        newPokemonItemInput: '#newPokemonItem',
-        clanSelectInput: '#clanSelect',
-        addPokemonModalCloseButton: '#addPokemonModal .close-button',
-        addPokemonModalCancelButton: '#addPokemonForm .secondary-button',
-        partialReturnListContainer: '#partialReturnList',
-        confirmPartialReturnButton: '#confirmPartialReturn',
-        partialReturnModalCloseButton: '#partialReturnModal .close-button',
-        historyButton: '#historyButton',
-        historyModalCloseButton: '#historyModal .close-button',
-        historyModalOverlay: '#historyModal .modal-overlay',
-        historySearchInput: '#historySearch',
-        historyFilterSelect: '#historyFilter',
-        deleteAllHistoryButton: '#delete-all-history-button',
-        historyListContainer: '#historyList',
-        loadingSpinner: '#loadingSpinner',
-    };
+import { dom } from './domElements.js';
+import { clanData } from './config.js';
 
-    for (const key in selectors) {
-        elements[key] = document.querySelector(selectors[key]);
-        // Basic check if element exists
-        if (!elements[key]) {
-             console.warn(`DOM element not found for selector: ${selectors[key]} (key: ${key})`);
-        }
-    }
-    console.log("DOM Elements Cached:", elements);
-}
+
+
 
 export function showSpinner() {
-    elements.loadingSpinner?.classList.remove('hidden');
+    if (dom.loadingSpinner) {
+        dom.loadingSpinner.classList.remove('hidden');
+    } else {
+        console.warn("Elemento Spinner não encontrado no DOM.");
+    }
 }
 
 export function hideSpinner() {
-    // Small delay to prevent flickering
-    setTimeout(() => elements.loadingSpinner?.classList.add('hidden'), 150);
+    if (dom.loadingSpinner) {
+        dom.loadingSpinner.classList.add('hidden');
+    }
 }
 
 export function toggleSidebar() {
-    elements.sidebar?.classList.toggle('active');
-    elements.menuOverlay?.classList.toggle('active');
+    if(dom.sidebar && dom.menuOverlay && dom.menuToggle) {
+        dom.sidebar.classList.toggle('active');
+        dom.menuOverlay.classList.toggle('active');
+
+        dom.menuToggle.classList.toggle('active');
+    } else {
+         console.error("Erro ao alternar sidebar: Elementos do DOM ausentes.");
+    }
 }
 
 export function closeSidebar() {
-    elements.sidebar?.classList.remove('active');
-    elements.menuOverlay?.classList.remove('active');
-}
-
-export function checkScreenSize() {
-    if (window.innerWidth >= 768) {
-        elements.sidebar?.classList.remove('active');
-        elements.menuOverlay?.classList.remove('active');
-    }
-}
-
-/** Updates active state and styles for sidebar buttons */
-export function updateSidebarActiveState(activeClanId) {
-    elements.sidebarNav?.querySelectorAll('.clan-button').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.clan === activeClanId);
-    });
-    updateClanUIStyles(); // Also update colors
-}
-
-/** Updates the visual style of various clan-related elements */
-export function updateClanUIStyles() {
-    // Home page cards
-    elements.clanCardsContainer?.querySelectorAll('.clan-card').forEach(card => {
-        const clanId = card.dataset.clan;
-        const clanInfo = CONFIG.CLAN_DATA[clanId];
-        if (clanInfo) {
-            const iconDiv = card.querySelector('.clan-icon');
-            if (iconDiv) iconDiv.style.color = clanInfo.color;
-            card.style.borderColor = clanInfo.color;
-        }
-    });
-
-    // Sidebar buttons
-    elements.sidebarNav?.querySelectorAll('.clan-button').forEach(button => {
-        const clanId = button.dataset.clan;
-        const clanInfo = CONFIG.CLAN_DATA[clanId];
-        const isActive = button.classList.contains('active');
-
-        button.style.borderLeftColor = 'transparent';
-        button.style.color = 'inherit';
-        button.style.removeProperty('--hover-color');
-
-        if (clanId !== 'home' && clanInfo) {
-            button.style.setProperty('--hover-color', clanInfo.color);
-            if (isActive) {
-                button.style.borderLeftColor = clanInfo.color;
-                button.style.color = clanInfo.color;
-            }
-        } else if (clanId === 'home' && isActive) {
-             button.style.borderLeftColor = '#3b82f6'; // Default active color for Home
-             button.style.color = '#3b82f6';
-        }
-    });
-     // Clan title color in clan view
-     const currentClanInfo = CONFIG.CLAN_DATA[state.currentClan];
-     if (elements.clanTitle) {
-        elements.clanTitle.style.color = (state.currentClan !== 'home' && currentClanInfo) ? currentClanInfo.color : 'inherit';
+     if(dom.sidebar && dom.menuOverlay && dom.menuToggle) {
+        dom.sidebar.classList.remove('active');
+        dom.menuOverlay.classList.remove('active');
+        dom.menuToggle.classList.remove('active');
      }
 }
 
-/**
- * Utility to create an element.
- * @param {string} tag - HTML tag name.
- * @param {object} [options] - Optional attributes and content.
- * @param {string} [options.className] - CSS class name.
- * @param {string} [options.textContent] - Text content.
- * @param {string} [options.innerHTML] - HTML content.
- * @param {string} [options.title] - Tooltip text.
- * @param {string} [options.type] - Input type.
- * @param {object} [options.dataset] - Data attributes { key: value }.
- * @returns {HTMLElement} The created element.
- */
-export function createElement(tag, options = {}) {
-    const element = document.createElement(tag);
-    if (options.className) element.className = options.className;
-    if (options.textContent) element.textContent = options.textContent;
-    if (options.innerHTML) element.innerHTML = options.innerHTML;
-    if (options.title) element.title = options.title;
-    if (options.type) element.type = options.type;
-    if (options.dataset) {
-        Object.entries(options.dataset).forEach(([key, value]) => {
-            element.dataset[key] = value;
+
+export function updateClanStyles(activeClan = 'home') {
+
+    if (dom.clanCards) {
+        dom.clanCards.forEach(card => {
+            const clan = card.dataset.clan;
+            if (clan && clanData[clan]) {
+                const iconDiv = card.querySelector('.clan-icon');
+                if (iconDiv) {
+                    iconDiv.style.color = clanData[clan].color;
+                }
+
+                card.style.borderTopColor = clanData[clan].color;
+            }
         });
     }
-    return element;
+
+
+    if (dom.clanButtons) {
+        dom.clanButtons.forEach(button => {
+            const clan = button.dataset.clan;
+
+
+            button.style.borderLeftColor = 'transparent';
+            button.style.color = '';
+            button.classList.remove('active');
+            button.style.removeProperty('--hover-color');
+
+
+            if (clan !== 'home' && clanData[clan]) {
+                button.style.setProperty('--hover-color', clanData[clan].color);
+            }
+
+
+            if (clan === activeClan) {
+                button.classList.add('active');
+                if (clan !== 'home' && clanData[clan]) {
+
+                    button.style.borderLeftColor = clanData[clan].color;
+                    button.style.color = clanData[clan].color;
+                } else if (clan === 'home') {
+
+                     button.style.borderLeftColor = 'var(--primary-color)';
+                     button.style.color = 'var(--primary-color)';
+                }
+            }
+        });
+    } else {
+        console.warn("Botões de clã da sidebar não encontrados para estilização.");
+    }
+
+
+
+    if (dom.clanTitle && dom.clanElementsTag) {
+        if (activeClan !== 'home' && clanData[activeClan]) {
+            dom.clanTitle.style.color = clanData[activeClan].color;
+            dom.clanElementsTag.textContent = clanData[activeClan].elements;
+
+            dom.clanElementsTag.style.backgroundColor = `${clanData[activeClan].color}20`;
+            dom.clanElementsTag.style.color = clanData[activeClan].color;
+            dom.clanElementsTag.style.borderColor = clanData[activeClan].color;
+            dom.clanElementsTag.style.display = 'inline-block';
+        } else {
+
+             dom.clanTitle.style.color = '';
+             dom.clanElementsTag.style.display = 'none';
+        }
+    }
 }
 
-/** Displays a message inside a container element */
-export function displayMessage(container, text, type = 'message') { // type = 'message' | 'error' | 'empty'
-    if (!container) return;
-    container.innerHTML = ''; // Clear previous content
-    const messageClass = type === 'error' ? 'error-message' : (type === 'empty' ? 'empty-message' : 'info-message');
-    const messageElement = createElement('div', { className: messageClass, textContent: text });
-    container.appendChild(messageElement);
+
+
+export function checkScreenSize() {
+    if (window.innerWidth >= 768) {
+
+        if (dom.sidebar && dom.sidebar.classList.contains('active')) {
+           closeSidebar();
+        }
+    }
+}
+
+
+export function displayError(message) {
+    console.error("Erro Aplicação:", message);
+    alert(`Erro: ${message}`);
+
+
+}
+
+
+export function displaySuccess(message) {
+    console.log("Sucesso:", message);
+    alert(message);
+}
+
+
+
+
+export function formatBrazilianDate(isoString) {
+
+    console.log(`Formatando data ISO recebida: ${isoString}`);
+
+    if (!isoString) return 'Data indisponível';
+    try {
+        const date = new Date(isoString);
+
+        if (isNaN(date.getTime())) {
+             const oldFormatMatch = isoString.match(/(\d{2})\/(\d{2})\/(\d{4}),?\s*(\d{2}:\d{2}:\d{2})/);
+             if (oldFormatMatch) {
+                 console.warn(`Data em formato antigo detectada: ${isoString}. Exibindo como está.`);
+                 return `${oldFormatMatch[1]}/${oldFormatMatch[2]}/${oldFormatMatch[3]} ${oldFormatMatch[4]}`;
+             }
+             console.warn("Data inválida ou formato irreconhecível recebido:", isoString);
+             return 'Data inválida';
+        }
+
+
+        console.log(`Data convertida para objeto Date:`, date, `Timestamp (ms): ${date.getTime()}`);
+
+        const options = {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            timeZone: 'America/Sao_Paulo',
+            hour12: false
+        };
+        const formattedDate = new Intl.DateTimeFormat('pt-BR', options).format(date);
+
+
+        console.log(`Data formatada para ${options.timeZone}: ${formattedDate}`);
+
+        return formattedDate;
+    } catch (error) {
+        console.error("Erro ao formatar data ISO:", isoString, error);
+        return 'Erro na data';
+    }
 }

@@ -4,13 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>House - Sistema de Gerenciamento de Pokémons</title>
-    <link rel="stylesheet" href="styles.css">
+
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/spinner.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/header.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/clan.css">
+    <link rel="stylesheet" href="css/modals.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Header -->
+
     <header class="header">
         <div class="container">
             <div class="header-left">
@@ -30,10 +39,10 @@
         </div>
     </header>
 
-    <!-- Menu Overlay -->
+
     <div id="menuOverlay" class="menu-overlay"></div>
 
-    <!-- Sidebar -->
+
     <aside id="sidebar" class="sidebar">
         <div class="sidebar-header">
             <h2>Clãs Pokémon</h2>
@@ -58,10 +67,10 @@
         </nav>
     </aside>
 
-    <!-- Main Content -->
+
     <main class="main-content">
         <div class="container">
-            <!-- Home Section -->
+
             <section id="home-section" class="section">
                 <div class="welcome-banner">
                     <div class="welcome-content">
@@ -164,12 +173,12 @@
                 <div class="active-pokemons">
                     <h3>Pokémons em Uso</h3>
                     <div id="activePokemonsList" class="active-pokemons-list">
-                        <!-- Lista de Pokémons em uso será carregada aqui -->
+
                     </div>
                 </div>
             </section>
 
-            <!-- Clan Section (initially hidden) -->
+
             <section id="clan-section" class="section hidden">
                 <div class="container">
                     <div class="clan-header">
@@ -181,26 +190,26 @@
                             Voltar
                         </button>
                     </div>
-            
-                    <!-- Botão "Bag Inteira" e "Adicionar Pokémon" -->
+
+
                     <div class="clan-actions">
                         <button id="selectEntireBag" class="primary-button">Adicionar Tudo</button>
-                        
+
                     </div>
-            
-                    <!-- Pokémon Selection -->
+
+
                     <div id="pokemon-selection" class="pokemon-selection">
-                        <!-- Aqui serão renderizados os Pokémons do clã -->
+
                     </div>
-            
-                    <!-- Empty Clan Message -->
+
+
                     <div id="empty-clan" class="empty-clan hidden">
                         <svg>...</svg>
                         <h3>Nenhum Pokémon disponível</h3>
                         <p>Este clã não possui Pokémons cadastrados no momento.</p>
                     </div>
-            
-                    <!-- Trainer Input -->
+
+
                     <div class="trainer-input">
                         <input id="trainerName" type="text" placeholder="Digite seu nome">
                         <button id="confirmSelection" class="confirm-button">Confirmar Seleção</button>
@@ -210,7 +219,7 @@
         </div>
     </main>
 
-    <!-- Modal de erro -->
+
 <div id="errorModal" class="modal">
     <div class="modal-overlay" onclick="closeErrorModal()"></div>
     <div class="modal-content">
@@ -229,7 +238,7 @@
     </div>
 </div>
 
-    <!-- Botão de adicionar Pokémon -->
+
 <button id="addPokemonButton" class="add-pokemon-button">
     +
 </button>
@@ -243,7 +252,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h2>Adicionar Pokémon</h2>
-            <button class="close-button" onclick="closeAddPokemonModal()">
+            <button class="close-button">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
         </div>
@@ -260,10 +269,10 @@
                 <div class="form-group">
                     <label for="clanSelect">Selecione o Clã</label>
                     <select id="clanSelect" required>
-                        <!-- Os clãs serão carregados dinamicamente aqui -->
+
                     </select>
                 </div>
-               
+
                 <div class="form-actions">
                     <button type="submit" class="primary-button">Adicionar</button>
                     <button type="button" class="secondary-button" onclick="closeAddPokemonModal()">Cancelar</button>
@@ -273,7 +282,7 @@
     </div>
 </div>
 
-    <!-- Modal para devolução parcial -->
+
     <div id="partialReturnModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -285,7 +294,7 @@
             <div class="modal-body">
                 <p>Selecione os Pokémons que deseja devolver:</p>
                 <div id="partialReturnList" class="partial-return-list">
-                    <!-- Lista de Pokémons para devolução parcial será carregada aqui -->
+
                 </div>
             </div>
             <div class="modal-footer">
@@ -294,16 +303,16 @@
         </div>
     </div>
 
-    <!-- Modal de histórico -->
+
     <div id="historyModal" class="modal">
         <div class="modal-overlay" onclick="closeHistoryModal()"></div>
         <div class="modal-content history-modal-content">
             <div class="modal-header">
                 <h2>Histórico de Uso</h2>
-                <button onclick="closeHistoryModal()" class="close-button">×</button>
+                <button class="close-button">X</button>
             </div>
             <div class="modal-body">
-                <!-- Filtros e busca -->
+
                 <div class="history-filters">
                     <input id="historySearch" type="text" class="history-search" placeholder="Buscar...">
                     <select id="historyFilter" class="history-filter">
@@ -313,10 +322,10 @@
                     </select>
                 </div>
 
-                <!-- Botão "Deletar Tudo" -->
+
                 <button id="delete-all-history-button" class="delete-all-button">Deletar Tudo</button>
 
-                <!-- Lista de histórico -->
+
                 <div id="historyList" class="history-list"></div>
             </div>
         </div>
