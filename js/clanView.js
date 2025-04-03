@@ -14,16 +14,14 @@
  * - handleConfirmSelection: Valida a seleção e o nome do treinador, e envia para a API.
  * - handleDeletePokemon: Pede senha e confirmação para deletar um Pokémon via API.
  */
+// Arquivo: js/clanView.js
+
 import { dom } from './domElements.js';
-import { getState, addSelectedPokemon, removeSelectedPokemon, clearSelectedPokemons, setIsDeletingPokemon, setSelectedPokemons } from './state.js'; // Adicionado setSelectedPokemons
+import { getState, addSelectedPokemon, removeSelectedPokemon, clearSelectedPokemons, setIsDeletingPokemon, setSelectedPokemons } from './state.js';
 import { fetchClanPokemons, postHistory, deletePokemonAPI } from './api.js';
 import { updateClanStyles, displayError, displaySuccess } from './ui.js';
 import { ADMIN_PASSWORD } from './config.js';
 import { switchView } from './app.js';
-
-
-
-
 
 
 export async function loadClanView(clanName) {
@@ -205,29 +203,8 @@ export async function handleConfirmSelection() {
     }
 
     try {
-
-        const currentClan = getState().currentClan;
-        const freshPokemons = await fetchClanPokemons(currentClan);
-        const unavailableSelected = selectedIds.filter(id => {
-            const p = freshPokemons.find(fp => fp.id === id);
-            return !p || p.status !== 'available';
-        });
-
-        if (unavailableSelected.length > 0) {
-            const unavailableNames = unavailableSelected.map(id => {
-                 const p = freshPokemons.find(fp => fp.id === id);
-                 return p ? p.name : id;
-            });
-            displayError(`Os seguintes Pokémons não estão mais disponíveis: ${unavailableNames.join(', ')}. A lista será atualizada.`);
-            loadClanView(currentClan);
-            clearSelectedPokemons();
-            return;
-        }
-
-
         await postHistory(trainerName, selectedIds);
         displaySuccess(`${selectedIds.length} Pokémon(s) registrado(s) com sucesso para ${trainerName}!`);
-
 
         clearSelectedPokemons();
         dom.trainerNameInput.value = '';
@@ -235,8 +212,6 @@ export async function handleConfirmSelection() {
 
     } catch (error) {
 
-
-        loadClanView(getState().currentClan);
     }
 }
 
