@@ -175,3 +175,34 @@ Estabelece um estilo base para botões e seus estados (hover, focus, disabled).
      padding-top: 0;
      margin-top: 1.5rem;
 }
+
+/* Estilo para o botão Adicionar Treinador no header */
+.add-trainer-button {
+    background-color: var(--bg-white);
+    color: var(--info-color); /* Ou outra cor que destaque */
+    border: 1px solid var(--border-medium);
+    padding: 0.6rem 1.2rem; /* Ajuste padding se necessário */
+}
+
+.add-trainer-button:hover:not(:disabled) {
+    background-color: var(--bg-gray);
+    border-color: var(--info-color);
+    color: var(--primary-dark); /* Cor no hover */
+}
+
+.add-trainer-button svg {
+    width: 16px;
+    height: 16px;
+    margin-right: 0.4rem; /* Espaço entre ícone e texto */
+}
+
+/* Ajuste para mobile se necessário */
+@media (max-width: 767px) {
+    .add-trainer-button span {
+         /* Pode esconder o texto em telas pequenas */
+         display: none;
+    }
+     .add-trainer-button {
+         padding: 0.6rem 0.8rem; /* Menor padding */
+     }
+}

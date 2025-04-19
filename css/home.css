@@ -141,7 +141,7 @@ lista que exibe os Pokémons atualmente em uso (ativos).
     cursor: pointer;
     transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
     border: 1px solid transparent;
-    border-top: 4px solid transparent;
+    border-top: 4px solid transparent; /* Mantido para cor do clã */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -151,15 +151,17 @@ lista que exibe os Pokémons atualmente em uso (ativos).
 .clan-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-md);
-    border-color: var(--border-light);
+    border-color: var(--border-light); /* Borda geral no hover */
+    border-top-color: currentColor; /* Usa a cor do clã no hover também */
 }
 
+/* Efeito sutil na borda inferior (opcional) */
 .clan-card::after {
     content: '';
     position: absolute;
     bottom: 0; left: 0; right: 0;
     height: 4px;
-    background-color: currentColor;
+    background-color: currentColor; /* Usa a cor definida no JS/CSS */
     opacity: 0;
     transition: opacity var(--transition);
     pointer-events: none;
@@ -177,9 +179,9 @@ lista que exibe os Pokémons atualmente em uso (ativos).
     justify-content: center;
     margin-bottom: 1rem;
     background: var(--bg-light);
-    border: 2px solid currentColor;
+    border: 2px solid currentColor; /* Usa a cor definida no JS/CSS */
     transition: transform var(--transition), box-shadow var(--transition);
-    color: inherit;
+    color: inherit; /* Garante que a cor seja herdada para o currentColor */
 }
 .clan-card:hover .clan-icon {
     transform: scale(1.1) rotate(5deg);
@@ -188,6 +190,7 @@ lista que exibe os Pokémons atualmente em uso (ativos).
 .clan-icon svg {
     width: 26px;
     height: 26px;
+    stroke-width: 1.5; /* Ajuste se necessário para ícones SVG */
 }
 
 .clan-card h4 {
@@ -226,36 +229,47 @@ lista que exibe os Pokémons atualmente em uso (ativos).
     background-color: var(--bg-light);
     border-radius: var(--radius-sm);
     padding: 1.25rem 1.5rem;
-    border-left: 5px solid var(--primary-color);
+    border-left: 5px solid var(--primary-color); /* Cor padrão */
     box-shadow: none;
     border: 1px solid var(--border-light);
-    transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast), border-left-color var(--transition-fast); /* Adicionado border-left-color */
 }
 .active-pokemon-item:hover {
      box-shadow: var(--shadow-sm);
      transform: translateX(3px);
-     border-left-color: var(--primary-dark);
+     /* Opcional: intensificar a cor da borda no hover */
+     /* border-left-color: var(--primary-dark); */
 }
 
-.active-pokemon-item.malefic:hover { border-left-color: #581c87; }
-.active-pokemon-item.wingeon:hover { border-left-color: #0369a1; }
-
+/* Cores específicas da borda esquerda por clã */
 .active-pokemon-item.malefic { border-left-color: var(--malefic-color); }
+.active-pokemon-item.malefic:hover { border-left-color: #581c87; } /* Exemplo de cor hover mais escura */
 .active-pokemon-item.wingeon { border-left-color: var(--wingeon-color); }
+.active-pokemon-item.wingeon:hover { border-left-color: #0369a1; }
 .active-pokemon-item.ironhard { border-left-color: var(--ironhard-color); }
+.active-pokemon-item.ironhard:hover { border-left-color: #475569; }
 .active-pokemon-item.volcanic { border-left-color: var(--volcanic-color); }
+.active-pokemon-item.volcanic:hover { border-left-color: #b91c1c; }
 .active-pokemon-item.seavell { border-left-color: var(--seavell-color); }
+.active-pokemon-item.seavell:hover { border-left-color: #0e7490; }
 .active-pokemon-item.gardestrike { border-left-color: var(--gardestrike-color); }
+.active-pokemon-item.gardestrike:hover { border-left-color: #9a3412; }
 .active-pokemon-item.orebound { border-left-color: var(--orebound-color); }
+.active-pokemon-item.orebound:hover { border-left-color: #78350f; }
 .active-pokemon-item.naturia { border-left-color: var(--naturia-color); }
+.active-pokemon-item.naturia:hover { border-left-color: #15803d; }
 .active-pokemon-item.psycraft { border-left-color: var(--psycraft-color); }
+.active-pokemon-item.psycraft:hover { border-left-color: #c026d3; }
 .active-pokemon-item.raibolt { border-left-color: var(--raibolt-color); }
+.active-pokemon-item.raibolt:hover { border-left-color: #eab308; }
+/* ADICIONADA REGRA PARA 'OUTROS' */
+.active-pokemon-item.outros { border-left-color: var(--outros-color); }
+.active-pokemon-item.outros:hover { border-left-color: #52525b; } /* Cinza um pouco mais escuro */
 
-
+/* Fallback para clã desconhecido */
 .active-pokemon-item.unknown-clan {
     border-left-color: #cccccc;
 }
-
 .active-pokemon-item.unknown-clan:hover {
     border-left-color: #aaaaaa;
 }
@@ -285,9 +299,10 @@ lista que exibe os Pokémons atualmente em uso (ativos).
     font-size: 0.8rem;
 }
 
-.active-pokemon-list {
+.active-pokemon-name-list { /* Renomeado de active-pokemon-list para evitar conflito */
     color: var(--text-medium);
     font-size: 0.95rem;
     line-height: 1.5;
     margin-top: 0.5rem;
+    word-wrap: break-word; /* Permite quebrar nomes longos */
 }

@@ -2,7 +2,7 @@
 /*
 Estilos para o cabeçalho fixo no topo da aplicação.
 Contém o logo, o botão de menu (hamburguer) para mobile,
-e o botão de acesso ao histórico.
+e botões de ação (Treinadores, Histórico, Tema).
 */
 .header {
     background-color: var(--bg-white);
@@ -14,7 +14,15 @@ e o botão de acesso ao histórico.
     z-index: 50;
     height: 60px;
     border-bottom: 1px solid var(--border-light);
+    transition: var(--transition-theme); /* Adiciona transição */
 }
+
+/* Dark mode para header */
+body.dark-mode .header {
+     box-shadow: 0 1px 3px rgba(255,255,255,0.05); /* Sombra mais clara */
+     border-bottom-color: var(--border-light); /* Garante que a borda use a variável dark */
+}
+
 
 .header .container {
     display: flex;
@@ -27,7 +35,7 @@ e o botão de acesso ao histórico.
 .header-left, .header-right {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem; /* Espaço entre itens no header */
 }
 
 .logo {
@@ -42,12 +50,12 @@ e o botão de acesso ao histórico.
     gap: 0.5rem;
 }
 
-
 .logo:hover {
     color: var(--primary-dark);
     transform: scale(1.03);
 }
 
+/* Botão Hamburguer (Menu Mobile) */
 .menu-toggle {
     display: none;
     flex-direction: column;
@@ -59,8 +67,8 @@ e o botão de acesso ao histórico.
     cursor: pointer;
     padding: 0;
     position: relative;
+    z-index: 1001;
 }
-
 .menu-toggle span {
     display: block;
     width: 100%;
@@ -70,20 +78,40 @@ e o botão de acesso ao histórico.
     border-radius: 3px;
     transform-origin: center;
 }
+.menu-toggle.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.menu-toggle.active span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.menu-toggle.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
 
-.menu-toggle.active span:nth-child(1) {
-    transform: translateY(7px) rotate(45deg);
+
+/* Estilo para o Botão de Alternar Tema */
+#themeToggleButton {
+    background: none;
+    border: none;
+    padding: 0.5rem; /* Padding para área de clique e alinhamento */
+    margin: 0; /* Remove margem padrão */
+    cursor: pointer;
+    color: var(--text-medium); /* Cor do ícone */
+    border-radius: 50%; /* Botão redondo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    line-height: 1; /* Garante alinhamento vertical do SVG */
 }
-.menu-toggle.active span:nth-child(2) {
-    opacity: 0;
-    transform: scaleX(0);
+#themeToggleButton:hover {
+    background-color: var(--bg-gray); /* Fundo leve no hover */
+    color: var(--text-dark);
 }
-.menu-toggle.active span:nth-child(3) {
-     transform: translateY(-7px) rotate(-45deg);
+/* Garante que o SVG dentro do botão tenha o tamanho correto */
+#themeToggleButton svg {
+    width: 20px;
+    height: 20px;
+    display: block;
 }
 
 
+/* Responsividade */
 @media (max-width: 767px) {
     .menu-toggle {
         display: flex;
@@ -91,4 +119,27 @@ e o botão de acesso ao histórico.
     .header .container {
         padding: 0 1rem;
     }
+    .header-right {
+        gap: 0.5rem; /* Menor espaço no mobile */
+    }
+    /* Ajustar padding de todos os botões no header direito para mobile */
+    .header-right .button,
+    #themeToggleButton {
+        padding: 0.5rem 0.6rem;
+    }
+    /* Esconde texto dos botões de ação, deixando só ícone (se houver) ou botão menor */
+     .header-right .button span {
+        display: none;
+    }
+     .header-right .button svg {
+        margin-right: 0; /* Remove margem se o texto some */
+    }
+     #manageTrainersButton span { /* Esconde texto do botão Treinadores também */
+         display: none;
+     }
+     #manageTrainersButton {
+         min-width: 36px; /* Garante um tamanho mínimo */
+         padding: 0.5rem;
+         /* Adicione um ícone aqui se desejar para mobile */
+     }
 }
