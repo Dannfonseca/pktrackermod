@@ -5,7 +5,7 @@ Inclui estilos para o cabeçalho do clã (título, tag de elementos, botão volt
 ações (botão "Adicionar Tudo"), a lista de seleção de Pokémons (itens,
 botões de selecionar/deletar, estado de indisponível), os campos de input
 para senha e comentário do treinador, o botão de confirmação, e a mensagem exibida
-quando um clã não tem Pokémons.
+quando um clã não tem Pokémons. Ajuste de cor de texto para seleção no dark mode.
 */
 
 .clan-header {
@@ -84,11 +84,20 @@ quando um clã não tem Pokémons.
     border-left-color: var(--border-medium);
 }
 .pokemon-item.selected {
-    background-color: #e9efff;
+    background-color: #e9efff; /* Fundo claro para selecionado (geralmente funciona bem em ambos os modos) */
     border-color: var(--primary-light);
     border-left-color: var(--primary-color);
     box-shadow: var(--shadow);
 }
+/* <<< NOVO: Ajuste da cor do nome do Pokémon selecionado no Dark Mode >>> */
+body.dark-mode .pokemon-item.selected .pokemon-name {
+    color: #111827; /* Cor de texto bem escura para contraste no fundo claro */
+}
+body.dark-mode .pokemon-item.selected .pokemon-status {
+    color: #4b5563; /* Cor um pouco mais escura para o status também */
+}
+
+
 .pokemon-item.unavailable {
     background-color: var(--bg-gray);
     border-color: var(--border-light);
@@ -102,6 +111,11 @@ quando um clã não tem Pokémons.
     text-decoration: none;
     color: var(--text-light);
 }
+/* <<< Resetar cor no dark mode para indisponível, mesmo se selecionado (caso aconteça) >>> */
+body.dark-mode .pokemon-item.unavailable.selected .pokemon-name {
+    color: var(--text-light); /* Volta para cor padrão de indisponível */
+}
+
 .pokemon-item.unavailable .select-button {
      background-color: transparent;
      border: 2px solid var(--danger-color);
@@ -195,21 +209,20 @@ quando um clã não tem Pokémons.
     display: flex;
     gap: 1rem;
     margin-bottom: 2rem;
-    flex-wrap: wrap; /* Permite que os itens quebrem linha */
+    flex-wrap: wrap;
     padding: 1.5rem;
     background-color: var(--bg-gray);
     border-radius: var(--radius);
     border: 1px solid var(--border-light);
-    align-items: flex-start; /* Alinha itens ao topo se quebrar linha */
+    align-items: flex-start;
 }
 .trainer-input input[type="password"] {
-    flex: 1 1 200px; /* Base menor para input de senha */
-    min-width: 180px; /* Largura mínima */
+    flex: 1 1 200px;
+    min-width: 180px;
 }
 
-/* <<< NOVO: Estilo para o campo de comentário >>> */
 .trainer-input textarea#borrowComment {
-    flex: 2 1 300px; /* Ocupa mais espaço horizontal */
+    flex: 2 1 300px;
     min-width: 250px;
     padding: 0.65rem 1rem;
     border: 1px solid var(--border-medium);
@@ -217,9 +230,9 @@ quando um clã não tem Pokémons.
     font-size: 0.95rem;
     background-color: var(--bg-white);
     color: var(--text-dark);
-    resize: vertical; /* Permite redimensionar verticalmente */
-    min-height: 42px; /* Altura mínima similar ao input */
-    font-family: inherit; /* Garante a mesma fonte */
+    resize: vertical;
+    min-height: 42px;
+    font-family: inherit;
     line-height: 1.5;
     transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -237,7 +250,7 @@ quando um clã não tem Pokémons.
     flex-shrink: 0;
     padding: 0.65rem 2rem;
     font-size: 1rem;
-    align-self: center; /* Centraliza botão se os inputs tiverem alturas diferentes */
+    align-self: center;
 }
 
 
@@ -282,13 +295,13 @@ quando um clã não tem Pokémons.
 
 @media (max-width: 500px) {
     .trainer-input {
-        flex-direction: column; /* Empilha os inputs em telas muito pequenas */
-        align-items: stretch; /* Estica para largura total */
+        flex-direction: column;
+        align-items: stretch;
     }
      .trainer-input textarea#borrowComment,
      .trainer-input input[type="password"],
      .trainer-input .confirm-button {
-         width: 100%; /* Ocupa toda a largura */
-         flex-basis: auto; /* Reseta a base flex */
+         width: 100%;
+         flex-basis: auto;
      }
 }

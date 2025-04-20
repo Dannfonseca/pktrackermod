@@ -22,7 +22,8 @@ export const clanData = {
     orebound: { elements: 'Rock, Earth', color: '#92400e' },
     naturia: { elements: 'Grass, Bug', color: '#16a34a' },
     psycraft: { elements: 'Psychic, Fairy', color: '#d946ef' },
-    raibolt: { elements: 'Electric', color: '#facc15' },    
+    raibolt: { elements: 'Electric', color: '#facc15' },
+    // ADICIONADA ENTRADA PARA 'OUTROS'
     outros: { elements: 'Utilitários Diversos', color: '#71717a' } // Mesma cor definida no backend
 };
 

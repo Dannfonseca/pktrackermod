@@ -1,22 +1,14 @@
 // TODOLISTPOKEMON/js/api.js
 /**
  * Funções para interagir com a API do backend (definida em config.js).
- * Encapsula as chamadas fetch, tratando erros básicos e controlando
- * a exibição do spinner de carregamento (showSpinner, hideSpinner de ui.js).
- * Inclui função para adicionar treinadores e modifica postHistory para usar senha e comentário.
+ * ... (comentários anteriores) ...
+ * Inclui função para devolução múltipla de Pokémons.
  *
  * Funções Principais:
- * - fetchData: Helper genérico para requisições fetch.
- * - addTrainerAPI: Adiciona um novo treinador (requer senha admin).
- * - fetchClanPokemons: Busca Pokémons de um clã.
- * - fetchAllHistory: Busca todo o histórico (com nome do treinador e comentário).
- * - fetchActiveHistory: Busca histórico ativo (empréstimos não devolvidos, com nome do treinador e comentário).
- * - postHistory: Registra um novo empréstimo validando a senha do treinador e incluindo um comentário opcional.
- * - returnPokemonAPI: Marca uma entrada de histórico como devolvida.
- * - deleteHistoryEntryAPI: Deleta uma entrada/grupo do histórico.
- * - deleteAllHistoryAPI: Deleta todo o histórico.
- * - addPokemonAPI: Adiciona um novo Pokémon a um clã.
- * - deletePokemonAPI: Deleta um Pokémon pelo ID.
+ * ...
+ * - returnPokemonAPI: Marca UMA entrada de histórico como devolvida.
+ * - returnMultiplePokemonAPI: Marca VÁRIAS entradas de histórico como devolvidas (NOVO).
+ * ...
  */
 import { API_BASE_URL } from './config.js';
 import { showSpinner, hideSpinner, displayError } from './ui.js';
@@ -59,7 +51,7 @@ async function fetchData(url, options = {}) {
 }
 
 // --- Funções da API ---
-
+// (Funções addTrainerAPI, fetchTrainersAPI, deleteTrainerAPI, fetchClanPokemons, fetchAllHistory, fetchActiveHistory, postHistory, deleteHistoryEntryAPI, deleteAllHistoryAPI, addPokemonAPI, deletePokemonAPI permanecem as mesmas)
 export async function addTrainerAPI(name, email, password, adminPassword) {
     if (!name || !email || !password || !adminPassword) {
         throw new Error("Nome, email, senha do treinador e senha do admin são obrigatórios.");
@@ -67,19 +59,12 @@ export async function addTrainerAPI(name, email, password, adminPassword) {
     return await fetchData(`${API_BASE_URL}/trainers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            name: name,
-            email: email,
-            password: password,
-            admin_password: adminPassword
-        }),
+        body: JSON.stringify({ name, email, password, admin_password: adminPassword }),
     });
 }
-
 export async function fetchTrainersAPI() {
     return await fetchData(`${API_BASE_URL}/trainers`);
 }
-
 export async function deleteTrainerAPI(trainerId, adminPassword) {
     if (!trainerId || !adminPassword) {
         throw new Error("ID do Treinador e Senha de Admin são obrigatórios para deleção.");
@@ -90,26 +75,17 @@ export async function deleteTrainerAPI(trainerId, adminPassword) {
         body: JSON.stringify({ admin_password: adminPassword })
     });
 }
-
 export async function fetchClanPokemons(clan) {
     if (!clan || clan === 'home') return [];
     return await fetchData(`${API_BASE_URL}/clans/${clan}/pokemons`);
 }
-
-
 export async function fetchAllHistory() {
-    // Backend já retorna trainer_name e comment
     return await fetchData(`${API_BASE_URL}/history`);
 }
-
-
 export async function fetchActiveHistory() {
-     // Backend já retorna trainer_name e comment (do primeiro item do grupo)
     return await fetchData(`${API_BASE_URL}/history/active`);
 }
-
-// Aceita senha do treinador e comentário opcional
-export async function postHistory(trainerPassword, pokemonIds, comment) { // <<< NOVO: Parâmetro comment
+export async function postHistory(trainerPassword, pokemonIds, comment) {
      if (!trainerPassword || !pokemonIds || pokemonIds.length === 0) {
         throw new Error("Senha do treinador e Pokémons selecionados são necessários.");
     }
@@ -119,13 +95,40 @@ export async function postHistory(trainerPassword, pokemonIds, comment) { // <<<
         body: JSON.stringify({
              trainer_password: trainerPassword,
              pokemons: pokemonIds,
-             comment: comment || null // <<< NOVO: Envia comment ou null
+             comment: comment || null
         }),
     });
 }
+export async function deleteHistoryEntryAPI(id) {
+    if (!id) {
+        throw new Error("ID da entrada do histórico é obrigatório para deleção.");
+    }
+    return await fetchData(`${API_BASE_URL}/history/${id}`, { method: 'DELETE' });
+}
+export async function deleteAllHistoryAPI() {
+    return await fetchData(`${API_BASE_URL}/history`, { method: 'DELETE' });
+}
+export async function addPokemonAPI(clan, name, item) {
+    if (!clan || !name) {
+        throw new Error("Clã e nome do Pokémon são obrigatórios.");
+    }
+    return await fetchData(`${API_BASE_URL}/clans/${clan}/pokemons`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, held_item: item || null }),
+    });
+}
+export async function deletePokemonAPI(pokemonId) {
+    if (!pokemonId) {
+        throw new Error("ID do Pokémon é obrigatório para deleção.");
+    }
+    return await fetchData(`${API_BASE_URL}/pokemons/${pokemonId}`, { method: 'DELETE' });
+}
 
 
+// API para devolver UM pokemon (Mantida, mas não usada pela devolução múltipla)
 export async function returnPokemonAPI(historyEntryId, trainerPassword) {
+    console.warn("Chamando API de devolução individual (returnPokemonAPI). Para múltiplos itens, use returnMultiplePokemonAPI.");
     if (!trainerPassword) {
         throw new Error("Senha do treinador é necessária para a devolução.");
     }
@@ -136,42 +139,20 @@ export async function returnPokemonAPI(historyEntryId, trainerPassword) {
    });
 }
 
-export async function deleteHistoryEntryAPI(id) {
-    if (!id) {
-        throw new Error("ID da entrada do histórico é obrigatório para deleção.");
+// <<< NOVA Função para devolver MÚLTIPLOS pokemons >>>
+export async function returnMultiplePokemonAPI(historyEntryIds, trainerPassword) {
+    if (!Array.isArray(historyEntryIds) || historyEntryIds.length === 0) {
+        throw new Error("É necessário fornecer uma lista de IDs de histórico.");
     }
-    return await fetchData(`${API_BASE_URL}/history/${id}`, {
-        method: 'DELETE',
-    });
-}
-
-
-export async function deleteAllHistoryAPI() {
-    return await fetchData(`${API_BASE_URL}/history`, {
-        method: 'DELETE',
-    });
-}
-
-
-export async function addPokemonAPI(clan, name, item) {
-    if (!clan || !name) {
-        throw new Error("Clã e nome do Pokémon são obrigatórios.");
+    if (!trainerPassword) {
+        throw new Error("Senha do treinador é necessária para a devolução múltipla.");
     }
-    return await fetchData(`${API_BASE_URL}/clans/${clan}/pokemons`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, held_item: item || null }),
-    });
-}
-
-
-export async function deletePokemonAPI(pokemonId) {
-    if (!pokemonId) {
-        throw new Error("ID do Pokémon é obrigatório para deleção.");
-    }
-    return await fetchData(`${API_BASE_URL}/pokemons/${pokemonId}`, {
-        method: 'DELETE',
-    });
+    return await fetchData(`${API_BASE_URL}/history/return-multiple`, { // Chama o novo endpoint
+       method: 'PUT',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ // Envia a lista de IDs e a senha
+           historyEntryIds: historyEntryIds,
+           trainer_password: trainerPassword
+       })
+   });
 }
