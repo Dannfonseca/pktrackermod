@@ -306,3 +306,27 @@ lista que exibe os Pokémons atualmente em uso (ativos).
     margin-top: 0.5rem;
     word-wrap: break-word; /* Permite quebrar nomes longos */
 }
+
+/* Estilo para o comentário na lista de ativos */
+.active-pokemon-comment {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text-medium);
+    background-color: rgba(0,0,0,0.03); /* Fundo levemente diferente */
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--border-medium);
+    line-height: 1.4;
+}
+.active-pokemon-comment strong {
+    color: var(--text-dark);
+    font-weight: 500;
+}
+/* Ajuste no dark mode */
+body.dark-mode .active-pokemon-comment {
+    background-color: rgba(255,255,255,0.05);
+     border-left-color: var(--border-medium);
+}
+body.dark-mode .active-pokemon-comment strong {
+     color: var(--text-dark);
+}

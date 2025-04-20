@@ -302,3 +302,31 @@ Adicionados estilos para o modal de Gerenciamento de Treinadores.
     color: var(--text-light);
     font-style: italic;
 }
+
+/* Estilo para o comentário no modal de histórico */
+.history-comment {
+    margin-bottom: 0.75rem; /* Espaço antes da lista de pokemons */
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    color: var(--text-medium);
+    background-color: var(--bg-light);
+    border: 1px solid var(--border-light);
+    border-left: 4px solid var(--info-color); /* Cor de info para destacar */
+    border-radius: var(--radius-sm);
+    line-height: 1.5;
+    word-wrap: break-word; /* Quebra palavras longas */
+}
+.history-comment strong {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-right: 0.4rem;
+}
+/* Ajuste no dark mode */
+body.dark-mode .history-comment {
+     background-color: var(--bg-light);
+     border-color: var(--border-light);
+     border-left-color: var(--info-color);
+}
+body.dark-mode .history-comment strong {
+     color: var(--text-dark);
+}

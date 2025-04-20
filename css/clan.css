@@ -3,8 +3,8 @@
 Estilos específicos para a seção de visualização de um Clã.
 Inclui estilos para o cabeçalho do clã (título, tag de elementos, botão voltar),
 ações (botão "Adicionar Tudo"), a lista de seleção de Pokémons (itens,
-botões de selecionar/deletar, estado de indisponível), o campo de input
-para o nome do treinador e o botão de confirmação, e a mensagem exibida
+botões de selecionar/deletar, estado de indisponível), os campos de input
+para senha e comentário do treinador, o botão de confirmação, e a mensagem exibida
 quando um clã não tem Pokémons.
 */
 
@@ -195,19 +195,49 @@ quando um clã não tem Pokémons.
     display: flex;
     gap: 1rem;
     margin-bottom: 2rem;
-    flex-wrap: wrap;
+    flex-wrap: wrap; /* Permite que os itens quebrem linha */
     padding: 1.5rem;
     background-color: var(--bg-gray);
     border-radius: var(--radius);
     border: 1px solid var(--border-light);
+    align-items: flex-start; /* Alinha itens ao topo se quebrar linha */
 }
-.trainer-input input {
-    flex: 1 1 250px;
+.trainer-input input[type="password"] {
+    flex: 1 1 200px; /* Base menor para input de senha */
+    min-width: 180px; /* Largura mínima */
 }
+
+/* <<< NOVO: Estilo para o campo de comentário >>> */
+.trainer-input textarea#borrowComment {
+    flex: 2 1 300px; /* Ocupa mais espaço horizontal */
+    min-width: 250px;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    background-color: var(--bg-white);
+    color: var(--text-dark);
+    resize: vertical; /* Permite redimensionar verticalmente */
+    min-height: 42px; /* Altura mínima similar ao input */
+    font-family: inherit; /* Garante a mesma fonte */
+    line-height: 1.5;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.trainer-input textarea#borrowComment:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--focus-ring-color);
+}
+.trainer-input textarea#borrowComment::placeholder {
+    color: var(--text-light);
+    opacity: 0.8;
+}
+
 .trainer-input .confirm-button {
     flex-shrink: 0;
     padding: 0.65rem 2rem;
     font-size: 1rem;
+    align-self: center; /* Centraliza botão se os inputs tiverem alturas diferentes */
 }
 
 
@@ -248,4 +278,17 @@ quando um clã não tem Pokémons.
     .pokemon-selection {
         grid-template-columns: repeat(3, 1fr);
     }
+}
+
+@media (max-width: 500px) {
+    .trainer-input {
+        flex-direction: column; /* Empilha os inputs em telas muito pequenas */
+        align-items: stretch; /* Estica para largura total */
+    }
+     .trainer-input textarea#borrowComment,
+     .trainer-input input[type="password"],
+     .trainer-input .confirm-button {
+         width: 100%; /* Ocupa toda a largura */
+         flex-basis: auto; /* Reseta a base flex */
+     }
 }

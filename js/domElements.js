@@ -6,14 +6,14 @@
 export const dom = {
 
     // Body
-    body: document.body, // Adicionado para facilitar toggle de classe
+    body: document.body,
 
     // Header
     menuToggle: document.getElementById('menuToggle'),
     logo: document.querySelector('.logo'),
     manageTrainersButton: document.getElementById('manageTrainersButton'),
     historyButton: document.getElementById('historyButton'),
-    themeToggleButton: document.getElementById('themeToggleButton'), // <<< NOVO
+    themeToggleButton: document.getElementById('themeToggleButton'),
 
     // Sidebar
     sidebar: document.getElementById('sidebar'),
@@ -40,6 +40,7 @@ export const dom = {
     pokemonSelectionContainer: document.getElementById('pokemon-selection'),
     emptyClanMessage: document.getElementById('empty-clan'),
     trainerPasswordInput: document.getElementById('trainerPassword'),
+    borrowCommentInput: document.getElementById('borrowComment'), // <<< NOVO
     confirmSelectionButton: document.getElementById('confirmSelection'),
 
     // Modais Gerais e Botão Flutuante

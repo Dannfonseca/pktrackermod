@@ -8,7 +8,7 @@
  */
 
 // URL para a API rodando localmente
-export const API_BASE_URL = 'https://poketrackerapi.onrender.com';
+export const API_BASE_URL = 'http://localhost:3000';
 
 // Dados estáticos dos clãs para o frontend
 export const clanData = {
@@ -21,8 +21,7 @@ export const clanData = {
     orebound: { elements: 'Rock, Earth', color: '#92400e' },
     naturia: { elements: 'Grass, Bug', color: '#16a34a' },
     psycraft: { elements: 'Psychic, Fairy', color: '#d946ef' },
-    raibolt: { elements: 'Electric', color: '#facc15' },
-    // ADICIONADA ENTRADA PARA 'OUTROS'
+    raibolt: { elements: 'Electric', color: '#facc15' },    
     outros: { elements: 'Utilitários Diversos', color: '#71717a' } // Mesma cor definida no backend
 };
 

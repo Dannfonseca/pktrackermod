@@ -94,7 +94,7 @@
                     <ol>
                         <li>Selecione um clã no menu lateral para visualizar os Pokémons disponíveis.</li>
                         <li>Adicione os Pokémons que deseja utilizar clicando no botão <strong>+</strong>.</li>
-                        <li>Insira sua <strong>senha de treinador</strong> cadastrada e confirme para registrar o uso.</li>
+                        <li>Insira sua <strong>senha de treinador</strong> cadastrada, adicione um <strong>comentário</strong> (opcional) e confirme para registrar o uso.</li>
                         <li>Para devolver, acesse o histórico ou a lista de Pokémons em uso e use sua senha.</li>
                         <li>Você pode devolver todos os Pokémons ou apenas alguns específicos.</li>
                          <li>Gerencie treinadores (adicionar/remover) no botão "Treinadores" no cabeçalho (requer senha admin).</li>
@@ -187,7 +187,7 @@
                 <div class="active-pokemons">
                     <h3>Pokémons em Uso</h3>
                     <div id="activePokemonsList" class="active-pokemons-list">
-                    </div>
+                       </div>
                 </div>
             </section>
 
@@ -211,7 +211,7 @@
 
 
                     <div id="pokemon-selection" class="pokemon-selection">
-                    </div>
+                       </div>
 
 
                     <div id="empty-clan" class="empty-clan hidden">
@@ -222,7 +222,8 @@
 
 
                     <div class="trainer-input">
-                        <input id="trainerPassword" type="password" placeholder="Digite sua senha de treinador">
+                        <input id="trainerPassword" type="password" placeholder="Digite sua senha de treinador" required>
+                        <textarea id="borrowComment" placeholder="Comentário (opcional, ex: 'Peguei para o Fulano')" rows="2"></textarea>
                         <button id="confirmSelection" class="confirm-button">Confirmar Seleção</button>
                     </div>
                 </div>
@@ -340,7 +341,7 @@
             <div class="modal-body">
                 <p>Selecione os Pokémons que deseja devolver:</p>
                 <div id="partialReturnList" class="partial-return-list">
-                </div>
+                    </div>
                 <div class="form-group" style="margin-top: 1.5rem;">
                     <label for="partialReturnPassword">Sua Senha de Treinador</label>
                     <input type="password" id="partialReturnPassword" placeholder="Digite sua senha para confirmar" required>
@@ -356,14 +357,13 @@
 
     <div id="historyModal" class="modal">
         <div class="modal-overlay"></div>
-        <div class="modal-content history-modal-content">
-            <div class="modal-header">
+        <div class="modal-content history-modal-content"> <div class="modal-header">
                 <h2>Histórico de Uso</h2>
                 <button class="close-button">X</button>
             </div>
             <div class="modal-body">
                 <div class="history-filters">
-                    <input id="historySearch" type="text" class="history-search" placeholder="Buscar por treinador ou pokémon...">
+                    <input id="historySearch" type="text" class="history-search" placeholder="Buscar por treinador, pokémon ou comentário...">
                     <select id="historyFilter" class="history-filter">
                         <option value="all">Todos</option>
                         <option value="active">Em uso</option>
@@ -372,7 +372,7 @@
                     <button id="delete-all-history-button" class="delete-all-button">Deletar Histórico Completo</button>
                 </div>
                 <div id="historyList" class="history-list">
-                </div>
+                    </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="secondary-button">Fechar</button>
@@ -396,7 +396,7 @@
             <div class="modal-body">
                 <p>Lista de treinadores cadastrados:</p>
                 <div id="trainerListContainer" class="trainer-list">
-                </div>
+                    </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="secondary-button close-manage-trainers">Fechar</button>

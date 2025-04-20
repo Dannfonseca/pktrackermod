@@ -3,8 +3,8 @@
  * Gerencia a lógica e a renderização da visualização de um clã específico.
  * Responsável por buscar os Pokémons do clã via API, exibi-los, permitir
  * a seleção individual ou total, lidar com a confirmação do empréstimo
- * (enviando a SENHA do treinador para a API de histórico) e permitir a exclusão
- * de Pokémons (com senha de admin).
+ * (enviando a SENHA do treinador e um COMENTÁRIO opcional para a API de histórico)
+ * e permitir a exclusão de Pokémons (com senha de admin).
  *
  * Funções Principais:
  * - loadClanView: Carrega e renderiza a view do clã (título, lista de Pokémons).
@@ -12,64 +12,54 @@
  * - handleTogglePokemonSelection: Adiciona/remove um Pokémon da seleção atual.
  * - handleSelectEntireBag: Seleciona/deseleciona todos os Pokémons disponíveis.
  * - updateSelectEntireBagButton: Atualiza o texto/estado do botão "Adicionar Tudo".
- * - handleConfirmSelection: Valida a seleção e a SENHA do treinador, e envia para a API.
+ * - handleConfirmSelection: Valida a seleção, a SENHA do treinador e o COMENTÁRIO (opcional), e envia para a API.
  * - handleDeletePokemon: Pede senha de admin e confirmação para deletar um Pokémon via API.
  */
 
 import { dom } from './domElements.js';
-import { getState, addSelectedPokemon, removeSelectedPokemon, clearSelectedPokemons, setIsDeletingPokemon, setSelectedPokemons, setCurrentClan } from './state.js'; // Importa setCurrentClan
+import { getState, addSelectedPokemon, removeSelectedPokemon, clearSelectedPokemons, setIsDeletingPokemon, setSelectedPokemons, setCurrentClan } from './state.js';
 import { fetchClanPokemons, postHistory, deletePokemonAPI } from './api.js';
 import { updateClanStyles, displayError, displaySuccess } from './ui.js';
-// A senha ADMIN_PASSWORD não é importada aqui
 import { switchView } from './app.js';
 
-// DEFINIR A SENHA ADMIN *LOCALMENTE* APENAS PARA COMPARAÇÃO (Inseguro, idealmente validar no backend)
-const LOCAL_ADMIN_PASSWORD_FOR_CHECK = 'raito123'; // Use a mesma senha que está no backend
+const LOCAL_ADMIN_PASSWORD_FOR_CHECK = 'raito123';
 
 export async function loadClanView(clanName) {
-    // Define o clã atual no estado global
-    setCurrentClan(clanName); // Garante que o estado sabe qual clã está sendo visto
+    setCurrentClan(clanName);
     updateClanStyles(clanName);
 
     try {
-        // Limpa o campo de senha ANTES de buscar os pokemons
         if(dom.trainerPasswordInput) dom.trainerPasswordInput.value = '';
-
+        if(dom.borrowCommentInput) dom.borrowCommentInput.value = ''; // <<< NOVO: Limpa comentário ao carregar
         const pokemons = await fetchClanPokemons(clanName);
-        renderPokemonList(pokemons); // Renderiza a lista com os dados buscados
+        renderPokemonList(pokemons);
     } catch (error) {
-        // Se falhar ao buscar, renderiza a lista vazia e mostra a mensagem
         renderPokemonList([]);
-        // displayError já deve ter sido chamado em fetchClanPokemons
     }
 }
 
 
 function renderPokemonList(pokemons) {
-    // Verifica se os elementos do DOM existem
     if (!dom.pokemonSelectionContainer || !dom.emptyClanMessage || !dom.selectEntireBagButton) {
          console.error("Elementos essenciais da Clan View não encontrados no DOM (pokemonSelectionContainer, emptyClanMessage, selectEntireBagButton).");
-         // Poderia opcionalmente mostrar um erro mais visível para o usuário aqui
          return;
     }
 
-    dom.pokemonSelectionContainer.innerHTML = ''; // Limpa a lista existente
+    dom.pokemonSelectionContainer.innerHTML = '';
 
     if (!pokemons || pokemons.length === 0) {
-        // Mostra mensagem de clã vazio e esconde container da lista
         dom.pokemonSelectionContainer.classList.add('hidden');
         dom.emptyClanMessage.classList.remove('hidden');
-        dom.selectEntireBagButton.disabled = true; // Desabilita botão "Adicionar Tudo"
+        dom.selectEntireBagButton.disabled = true;
     } else {
-        // Mostra container da lista e esconde mensagem de clã vazio
         dom.pokemonSelectionContainer.classList.remove('hidden');
         dom.emptyClanMessage.classList.add('hidden');
-        dom.selectEntireBagButton.disabled = false; // Garante que o botão está habilitado
+        dom.selectEntireBagButton.disabled = false;
 
         pokemons.forEach(pokemon => {
             const div = document.createElement('div');
             div.className = 'pokemon-item';
-            div.dataset.pokemonId = pokemon.id; // Guarda o ID do Pokémon
+            div.dataset.pokemonId = pokemon.id;
 
             const nameDiv = document.createElement('div');
             nameDiv.className = 'pokemon-name';
@@ -81,24 +71,20 @@ function renderPokemonList(pokemons) {
 
             const selectButton = document.createElement('button');
             selectButton.className = 'select-button';
-            selectButton.dataset.action = 'toggle-select'; // Ação para o event listener
+            selectButton.dataset.action = 'toggle-select';
 
-            // Verifica o ESTADO GLOBAL para ver se este Pokémon está selecionado
             const isSelectedGlobally = getState().selectedPokemons[pokemon.id];
 
             if (pokemon.status !== 'available') {
-                // Pokémon indisponível
                 div.classList.add('unavailable');
                 selectButton.disabled = true;
-                selectButton.classList.add('unavailable'); // Classe específica para estilização se necessário
-                selectButton.textContent = 'X'; // Indicação visual de indisponibilidade
+                selectButton.classList.add('unavailable');
+                selectButton.textContent = 'X';
                 const statusDiv = document.createElement('div');
                 statusDiv.className = 'pokemon-status';
-                statusDiv.textContent = `Em uso`; // Ou outro status relevante
-                // Adiciona o status ao lado do nome (ou onde for apropriado no layout)
-                nameDiv.appendChild(statusDiv); // Exemplo: adiciona ao lado do nome
+                statusDiv.textContent = `Em uso`;
+                nameDiv.appendChild(statusDiv);
             } else {
-                // Pokémon disponível
                 selectButton.textContent = isSelectedGlobally ? '✓' : '+';
                 if (isSelectedGlobally) {
                     div.classList.add('selected');
@@ -108,9 +94,9 @@ function renderPokemonList(pokemons) {
 
             const deleteButton = document.createElement('button');
             deleteButton.className = 'delete-button';
-            deleteButton.textContent = '-'; // Ícone ou texto para deletar
-            deleteButton.dataset.action = 'delete-pokemon'; // Ação para o event listener
-            deleteButton.title = 'Deletar este Pokémon (Admin)'; // Tooltip
+            deleteButton.textContent = '-';
+            deleteButton.dataset.action = 'delete-pokemon';
+            deleteButton.title = 'Deletar este Pokémon (Admin)';
 
             actionsDiv.appendChild(selectButton);
             actionsDiv.appendChild(deleteButton);
@@ -118,40 +104,30 @@ function renderPokemonList(pokemons) {
 
             dom.pokemonSelectionContainer.appendChild(div);
         });
-
-        // Atualiza o estado do botão "Adicionar Tudo" após renderizar a lista
         updateSelectEntireBagButton(pokemons);
     }
-
-    // REMOVIDO: clearSelectedPokemons(); // <<-- LINHA REMOVIDA DAQUI -->>
-    // A limpeza da seleção não deve acontecer aqui para permitir seleção multi-clã.
 }
 
 
 export function handleTogglePokemonSelection(button) {
     const pokemonItem = button.closest('.pokemon-item');
-    // Não faz nada se o item não for encontrado ou estiver indisponível
     if (!pokemonItem || pokemonItem.classList.contains('unavailable')) return;
 
     const pokemonId = pokemonItem.dataset.pokemonId;
     const isSelected = getState().selectedPokemons[pokemonId];
 
     if (isSelected) {
-        // Desseleciona
         removeSelectedPokemon(pokemonId);
         pokemonItem.classList.remove('selected');
         button.classList.remove('selected');
         button.textContent = '+';
     } else {
-        // Seleciona
         addSelectedPokemon(pokemonId);
         pokemonItem.classList.add('selected');
         button.classList.add('selected');
         button.textContent = '✓';
     }
 
-    // Atualiza o botão "Adicionar/Retirar Tudo" baseado na nova seleção global
-    // Busca os pokémons renderizados atualmente no DOM para recalcular o estado do botão
     const pokemonItems = dom.pokemonSelectionContainer ? dom.pokemonSelectionContainer.querySelectorAll('.pokemon-item') : [];
      const currentClanPokemons = Array.from(pokemonItems).map(item => ({
          id: item.dataset.pokemonId,
@@ -166,7 +142,6 @@ export async function handleSelectEntireBag() {
     if (!currentClan || currentClan === 'home' || !dom.pokemonSelectionContainer) return;
 
     try {
-        // Busca os dados mais recentes dos pokémons do clã atual
         const pokemons = await fetchClanPokemons(currentClan);
         const availablePokemons = pokemons.filter(p => p.status === 'available');
 
@@ -177,77 +152,70 @@ export async function handleSelectEntireBag() {
 
         const currentSelection = getState().selectedPokemons;
         const availableIdsInCurrentClan = availablePokemons.map(p => p.id);
-        // Verifica se todos os disponíveis DESTE CLÃ já estão selecionados no estado global
         const allAvailableInClanSelected = availableIdsInCurrentClan.every(id => currentSelection[id]);
 
-        let newSelection = { ...currentSelection }; // Começa com a seleção global atual
+        let newSelection = { ...currentSelection };
 
         if (allAvailableInClanSelected) {
-            // Se todos disponíveis DESTE CLÃ já estão selecionados, a ação é REMOVER apenas os disponíveis deste clã
             availableIdsInCurrentClan.forEach(id => {
-                delete newSelection[id]; // Remove da cópia
+                delete newSelection[id];
             });
             console.log(`Removendo ${availableIdsInCurrentClan.length} pokemons do clã ${currentClan} da seleção.`);
         } else {
-             // Se nem todos estão selecionados, a ação é ADICIONAR todos os disponíveis deste clã à seleção global
             availableIdsInCurrentClan.forEach(id => {
-                newSelection[id] = true; // Adiciona/garante que está na cópia
+                newSelection[id] = true;
             });
              console.log(`Adicionando ${availableIdsInCurrentClan.length} pokemons do clã ${currentClan} à seleção.`);
         }
 
-        setSelectedPokemons(newSelection); // Atualiza o estado global da seleção COM A CÓPIA MODIFICADA
-        renderPokemonList(pokemons); // Re-renderiza a lista para refletir a nova seleção visualmente
+        setSelectedPokemons(newSelection);
+        renderPokemonList(pokemons);
 
     } catch (error) {
-        // displayError já chamado em fetchClanPokemons
         console.error("Erro ao selecionar/deselecionar toda a bag:", error);
     }
 }
 
 
-// Atualiza o texto e estado do botão "Adicionar Tudo"
 function updateSelectEntireBagButton(pokemons) {
      if(!dom.selectEntireBagButton) return;
 
     const availablePokemons = pokemons.filter(p => p.status === 'available');
-    // Se não há pokémons disponíveis, desabilita o botão
     if (availablePokemons.length === 0) {
         dom.selectEntireBagButton.textContent = 'Adicionar Tudo';
         dom.selectEntireBagButton.classList.remove('remove-all');
         dom.selectEntireBagButton.disabled = true;
         return;
     }
-
-    // Habilita o botão se há pokémons disponíveis
     dom.selectEntireBagButton.disabled = false;
 
     const currentSelection = getState().selectedPokemons;
     const availableIdsInCurrentClan = availablePokemons.map(p => p.id);
-    // Verifica se TODOS os disponíveis DESTE CLÃ JÁ ESTÃO na seleção global atual
     const allAvailableInClanSelected = availableIdsInCurrentClan.every(id => currentSelection[id]);
 
     if (allAvailableInClanSelected) {
-        // Se sim, o botão servirá para REMOVER todos DESTE CLÃ
         dom.selectEntireBagButton.textContent = 'Retirar Tudo';
-        dom.selectEntireBagButton.classList.add('remove-all'); // Classe para estilização diferente
+        dom.selectEntireBagButton.classList.add('remove-all');
     } else {
-        // Se não, o botão servirá para ADICIONAR todos DESTE CLÃ
         dom.selectEntireBagButton.textContent = 'Adicionar Tudo';
         dom.selectEntireBagButton.classList.remove('remove-all');
     }
 }
 
 
-// Confirma seleção usando senha do treinador
 export async function handleConfirmSelection() {
-     if(!dom.trainerPasswordInput || !dom.confirmSelectionButton) return;
+     // <<< NOVO: Inclui verificação do borrowCommentInput >>>
+     if(!dom.trainerPasswordInput || !dom.confirmSelectionButton || !dom.borrowCommentInput) {
+         console.error("Input de senha, botão de confirmação ou input de comentário não encontrado!");
+         return;
+     }
 
-    const trainerPassword = dom.trainerPasswordInput.value.trim(); // Pega a SENHA
-    const selectedIds = Object.keys(getState().selectedPokemons); // Pega IDs dos pokemons selecionados (de todos os clãs)
+    const trainerPassword = dom.trainerPasswordInput.value.trim();
+    const comment = dom.borrowCommentInput.value.trim(); // <<< NOVO: Pega o valor do comentário
+    const selectedIds = Object.keys(getState().selectedPokemons);
 
     if (!trainerPassword) {
-        displayError("Por favor, insira sua senha de treinador."); // Mensagem atualizada
+        displayError("Por favor, insira sua senha de treinador.");
         dom.trainerPasswordInput.focus();
         return;
     }
@@ -258,48 +226,44 @@ export async function handleConfirmSelection() {
     }
 
     const confirmButton = dom.confirmSelectionButton;
-    confirmButton.disabled = true; // Desabilita o botão
+    confirmButton.disabled = true;
 
     try {
-        // Chama a API passando a SENHA e os IDs (de todos os clãs selecionados)
-        const result = await postHistory(trainerPassword, selectedIds);
-        // A API POST /history agora retorna a mensagem com o nome do treinador
+        // <<< NOVO: Passa o comentário para a função postHistory >>>
+        const result = await postHistory(trainerPassword, selectedIds, comment);
         displaySuccess(result.message || `${selectedIds.length} Pokémon(s) registrado(s) com sucesso!`);
 
-        clearSelectedPokemons(); // Limpa a seleção do estado APÓS o sucesso
-        dom.trainerPasswordInput.value = ''; // Limpa o campo de senha
-        switchView('home'); // Volta para a home após o sucesso
+        clearSelectedPokemons();
+        dom.trainerPasswordInput.value = '';
+        dom.borrowCommentInput.value = ''; // <<< NOVO: Limpa o campo de comentário
+        switchView('home');
 
     } catch (error) {
-        // displayError já é chamado em fetchData/postHistory
         console.error("Erro ao confirmar seleção:", error);
          if (error.message && error.message.toLowerCase().includes('senha do treinador inválida')) {
              displayError('Senha do treinador inválida. Tente novamente.');
               dom.trainerPasswordInput.focus();
          } else if (error.message && error.message.toLowerCase().includes('disponível')) {
              displayError(`Um ou mais Pokémons selecionados não estão mais disponíveis: ${error.message}. Recarregando a lista...`);
-              // Recarrega a view do clã para mostrar o status atualizado
               loadClanView(getState().currentClan);
          }
     } finally {
-        confirmButton.disabled = false; // Reabilita o botão
+        confirmButton.disabled = false;
     }
 }
 
 
 export async function handleDeletePokemon(button) {
     const pokemonItem = button.closest('.pokemon-item');
-    // Previne múltiplas deleções simultâneas
     if (!pokemonItem || getState().isDeletingPokemon) return;
 
     const pokemonId = pokemonItem.dataset.pokemonId;
     const pokemonNameElement = pokemonItem.querySelector('.pokemon-name');
-    const pokemonName = pokemonNameElement ? pokemonNameElement.textContent.split('(')[0].trim() : pokemonId; // Tenta pegar só o nome
+    const pokemonName = pokemonNameElement ? pokemonNameElement.textContent.split('(')[0].trim() : pokemonId;
 
     const password = prompt(`[ADMIN] Digite a senha para deletar PERMANENTEMENTE o Pokémon "${pokemonName}":`);
-    if (password === null) return; // Cancelou o prompt
+    if (password === null) return;
 
-    // MUDAR: Compara com a constante local definida no início do arquivo
     if (password !== LOCAL_ADMIN_PASSWORD_FOR_CHECK) {
            displayError('Senha de administrador incorreta!');
         return;
@@ -309,18 +273,14 @@ export async function handleDeletePokemon(button) {
         return;
     }
 
-    setIsDeletingPokemon(true); // Flag para evitar concorrência
-    const deleteButton = button; // Guarda referência ao botão
-    deleteButton.disabled = true; // Desabilita o botão durante a operação
+    setIsDeletingPokemon(true);
+    const deleteButton = button;
+    deleteButton.disabled = true;
 
     try {
         const result = await deletePokemonAPI(pokemonId);
         displaySuccess(result.message || 'Pokémon deletado com sucesso!');
-
-        // Remove o item do DOM imediatamente após sucesso para feedback rápido
         pokemonItem.remove();
-         // Força recarregamento da view para garantir consistência,
-         // especialmente se a mensagem "empty-clan" deve aparecer.
          if(dom.pokemonSelectionContainer) {
             loadClanView(getState().currentClan);
          }
@@ -330,8 +290,8 @@ export async function handleDeletePokemon(button) {
          if (error.message && error.message.toLowerCase().includes('emprestado')) {
              displayError('Não é possível deletar um Pokémon que está emprestado.');
          }
-         deleteButton.disabled = false; // Reabilita botão em caso de falha
+         deleteButton.disabled = false;
     } finally {
-        setIsDeletingPokemon(false); // Libera a flag
+        setIsDeletingPokemon(false);
     }
 }
