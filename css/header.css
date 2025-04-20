@@ -3,6 +3,7 @@
 Estilos para o cabeçalho fixo no topo da aplicação.
 Contém o logo, o botão de menu (hamburguer) para mobile,
 e botões de ação (Treinadores, Histórico, Tema).
+Ícones substituem texto em botões de ação no mobile.
 */
 .header {
     background-color: var(--bg-white);
@@ -11,16 +12,15 @@ e botões de ação (Treinadores, Histórico, Tema).
     top: 0;
     left: 0;
     right: 0;
-    z-index: 50;
+    z-index: 50; /* Z-index menor que sidebar e modais */
     height: 60px;
     border-bottom: 1px solid var(--border-light);
-    transition: var(--transition-theme); /* Adiciona transição */
+    transition: var(--transition-theme);
 }
 
-/* Dark mode para header */
 body.dark-mode .header {
-     box-shadow: 0 1px 3px rgba(255,255,255,0.05); /* Sombra mais clara */
-     border-bottom-color: var(--border-light); /* Garante que a borda use a variável dark */
+     box-shadow: 0 1px 3px rgba(255,255,255,0.05);
+     border-bottom-color: var(--border-light);
 }
 
 
@@ -29,13 +29,13 @@ body.dark-mode .header {
     justify-content: space-between;
     align-items: center;
     height: 100%;
-    padding: 0 1.5rem;
+    padding: 0 1.5rem; /* Padding padrão para desktop */
 }
 
 .header-left, .header-right {
     display: flex;
     align-items: center;
-    gap: 0.75rem; /* Espaço entre itens no header */
+    gap: 0.75rem;
 }
 
 .logo {
@@ -57,7 +57,7 @@ body.dark-mode .header {
 
 /* Botão Hamburguer (Menu Mobile) */
 .menu-toggle {
-    display: none;
+    display: none; /* Escondido por padrão */
     flex-direction: column;
     justify-content: space-around;
     width: 24px;
@@ -67,7 +67,7 @@ body.dark-mode .header {
     cursor: pointer;
     padding: 0;
     position: relative;
-    z-index: 1001;
+    z-index: 1001; /* Acima do header, abaixo da sidebar */
 }
 .menu-toggle span {
     display: block;
@@ -88,58 +88,70 @@ body.dark-mode .header {
 #themeToggleButton {
     background: none;
     border: none;
-    padding: 0.5rem; /* Padding para área de clique e alinhamento */
-    margin: 0; /* Remove margem padrão */
+    padding: 0.5rem;
+    margin: 0;
     cursor: pointer;
-    color: var(--text-medium); /* Cor do ícone */
-    border-radius: 50%; /* Botão redondo */
+    color: var(--text-medium);
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background-color var(--transition-fast), color var(--transition-fast);
-    line-height: 1; /* Garante alinhamento vertical do SVG */
+    line-height: 1;
 }
 #themeToggleButton:hover {
-    background-color: var(--bg-gray); /* Fundo leve no hover */
+    background-color: var(--bg-gray);
     color: var(--text-dark);
 }
-/* Garante que o SVG dentro do botão tenha o tamanho correto */
 #themeToggleButton svg {
     width: 20px;
     height: 20px;
     display: block;
 }
 
+/* Estilo padrão dos botões de ação no header (desktop) */
+.header-right .button svg {
+    width: 18px; /* Tamanho padrão do ícone */
+    height: 18px;
+    margin-right: 0.4rem; /* Espaço entre ícone e texto */
+}
+
 
 /* Responsividade */
 @media (max-width: 767px) {
     .menu-toggle {
-        display: flex;
+        display: flex; /* Mostra o botão hamburguer */
     }
     .header .container {
-        padding: 0 1rem;
+        padding: 0 1rem; /* Menor padding no mobile */
     }
     .header-right {
-        gap: 0.5rem; /* Menor espaço no mobile */
+        gap: 0.35rem; /* Menor espaço entre botões no mobile */
     }
-    /* Ajustar padding de todos os botões no header direito para mobile */
+
+    /* Ajuste geral para botões no header direito no mobile */
     .header-right .button,
     #themeToggleButton {
-        padding: 0.5rem 0.6rem;
+        padding: 0.5rem; /* Padding uniforme para botões de ícone */
+        min-width: 36px; /* Garante um tamanho mínimo clicável */
+        min-height: 36px;
+        gap: 0; /* Remove gap interno se houver */
+        justify-content: center; /* Centraliza o ícone */
     }
-    /* Esconde texto dos botões de ação, deixando só ícone (se houver) ou botão menor */
-     .header-right .button span {
+
+    /* <<< NOVO: Esconde o texto (span) DENTRO dos botões específicos >>> */
+    #manageTrainersButton span,
+    #historyButton span {
         display: none;
     }
-     .header-right .button svg {
-        margin-right: 0; /* Remove margem se o texto some */
+
+    /* <<< NOVO: Garante que o SVG não tenha margem extra no mobile >>> */
+    #manageTrainersButton svg,
+    #historyButton svg {
+        margin-right: 0; /* Remove margem direita */
+         width: 20px; /* Ajusta tamanho do ícone se necessário */
+         height: 20px;
     }
-     #manageTrainersButton span { /* Esconde texto do botão Treinadores também */
-         display: none;
-     }
-     #manageTrainersButton {
-         min-width: 36px; /* Garante um tamanho mínimo */
-         padding: 0.5rem;
-         /* Adicione um ícone aqui se desejar para mobile */
-     }
+
+     
 }
