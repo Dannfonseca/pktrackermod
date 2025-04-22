@@ -18,7 +18,7 @@ import { getState, setActiveHistoryGroupIndex, setPartialReturnSelection, toggle
 import { renderActivePokemons } from './homeView.js';
 import { loadClanView } from './clanView.js';
 
-const LOCAL_ADMIN_PASSWORD_FOR_CHECK = 'raito123';
+const LOCAL_ADMIN_PASSWORD_FOR_CHECK = 'russelgay24';
 
 
 // --- Modal Adicionar Pokémon ---

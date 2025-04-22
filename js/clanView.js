@@ -22,7 +22,7 @@ import { fetchClanPokemons, postHistory, deletePokemonAPI } from './api.js';
 import { updateClanStyles, displayError, displaySuccess } from './ui.js';
 import { switchView } from './app.js';
 
-const LOCAL_ADMIN_PASSWORD_FOR_CHECK = 'raito123';
+const LOCAL_ADMIN_PASSWORD_FOR_CHECK = 'russelgay24';
 
 export async function loadClanView(clanName) {
     setCurrentClan(clanName);

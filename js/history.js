@@ -21,7 +21,7 @@ import { displayError, displaySuccess, formatBrazilianDate, showSpinner, hideSpi
 import { clanData } from './config.js';
 import { renderActivePokemons } from './homeView.js';
 
-const LOCAL_ADMIN_PASSWORD_FOR_CHECK = 'raito123';
+const LOCAL_ADMIN_PASSWORD_FOR_CHECK = 'russelgay24';
 
 let fullHistoryCache = [];
 let groupedHistoryForDelete = {};
