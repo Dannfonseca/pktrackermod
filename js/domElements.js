@@ -1,7 +1,7 @@
 // TODOLISTPOKEMON/js/domElements.js
 /**
  * Centraliza e exporta referências para elementos do DOM frequentemente
- * utilizados pela aplicação.
+ * utilizados pela aplicação. Inclui referências para a seção de favoritos e seus modais.
  */
 export const dom = {
 
@@ -11,6 +11,7 @@ export const dom = {
     // Header
     menuToggle: document.getElementById('menuToggle'),
     logo: document.querySelector('.logo'),
+    favoritesButton: document.getElementById('favoritesButton'),
     manageTrainersButton: document.getElementById('manageTrainersButton'),
     historyButton: document.getElementById('historyButton'),
     themeToggleButton: document.getElementById('themeToggleButton'),
@@ -24,6 +25,7 @@ export const dom = {
     // Seções Principais
     homeSection: document.getElementById('home-section'),
     clanSection: document.getElementById('clan-section'),
+    favoritesSection: document.getElementById('favorites-section'),
 
     // Home View
     exploreButton: document.getElementById('exploreButton'),
@@ -40,8 +42,12 @@ export const dom = {
     pokemonSelectionContainer: document.getElementById('pokemon-selection'),
     emptyClanMessage: document.getElementById('empty-clan'),
     trainerPasswordInput: document.getElementById('trainerPassword'),
-    borrowCommentInput: document.getElementById('borrowComment'), // <<< NOVO
+    borrowCommentInput: document.getElementById('borrowComment'), // Campo de comentário da Clan View
     confirmSelectionButton: document.getElementById('confirmSelection'),
+
+    // Favorites View
+    addNewListButton: document.getElementById('addNewListButton'),
+    favoriteListsContainer: document.getElementById('favoriteListsContainer'),
 
     // Modais Gerais e Botão Flutuante
     errorModal: document.getElementById('errorModal'),
@@ -68,6 +74,8 @@ export const dom = {
     partialReturnModal: document.getElementById('partialReturnModal'),
     partialReturnListContainer: document.getElementById('partialReturnList'),
     confirmPartialReturnButton: document.getElementById('confirmPartialReturn'),
+    partialReturnPasswordInput: document.getElementById('partialReturnPassword'),
+
 
     // Modal Histórico
     historyModal: document.getElementById('historyModal'),
@@ -80,4 +88,30 @@ export const dom = {
     manageTrainersModal: document.getElementById('manageTrainersModal'),
     trainerListContainer: document.getElementById('trainerListContainer'),
     openAddTrainerModalButton: document.getElementById('openAddTrainerModalButton'),
+
+    // Modal Criar Lista Favorita
+    createListModal: document.getElementById('createListModal'),
+    createListForm: document.getElementById('createListForm'),
+    newListNameInput: document.getElementById('newListName'),
+    createListPokemonSearch: document.getElementById('createListPokemonSearch'),
+    createListPokemonSelection: document.getElementById('createListPokemonSelection'),
+    confirmCreateListButton: document.getElementById('confirmCreateListButton'),
+
+    // Modal Ver/Editar Lista Favorita
+    viewEditListModal: document.getElementById('viewEditListModal'),
+    editListForm: document.getElementById('editListForm'),
+    editListIdInput: document.getElementById('editListId'),
+    editListNameInput: document.getElementById('editListName'),
+    editListPokemonSearch: document.getElementById('editListPokemonSearch'),
+    editListPokemonSelection: document.getElementById('editListPokemonSelection'),
+    confirmEditListButton: document.getElementById('confirmEditListButton'),
+
+    // Modal Usar Lista Favorita
+    borrowListModal: document.getElementById('borrowListModal'),
+    borrowListModalTitle: document.getElementById('borrowListModalTitle'),
+    borrowListIdInput: document.getElementById('borrowListId'),
+    borrowListPokemonsPreview: document.getElementById('borrowListPokemonsPreview'),
+    borrowListTrainerPasswordInput: document.getElementById('borrowListTrainerPassword'),
+    borrowListCommentInput: document.getElementById('borrowListComment'), // Campo de comentário do Modal Borrow List
+    confirmBorrowListButton: document.getElementById('confirmBorrowListButton'),
 };

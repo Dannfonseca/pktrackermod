@@ -206,3 +206,100 @@ Estabelece um estilo base para botões e seus estados (hover, focus, disabled).
          padding: 0.6rem 0.8rem; /* Menor padding */
      }
 }
+
+/* Estilos para Itens da Lista de Favoritos */
+.favorite-list-item {
+    background-color: var(--bg-white);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column; /* Empilha nome e botões */
+    gap: 1rem; /* Espaço entre nome e botões */
+    transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.favorite-list-item:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.favorite-list-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Alinha nome e botão delete */
+    gap: 0.75rem;
+}
+
+.favorite-list-item-header h3 { /* Nome da Lista */
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0;
+    word-break: break-word; /* Quebra nomes longos */
+    flex-grow: 1; /* Ocupa espaço */
+}
+
+.favorite-list-item-header .delete-list-button {
+    /* Usa estilo .delete-button mas menor */
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+    background-color: transparent;
+    color: var(--text-light);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    line-height: 1;
+    flex-shrink: 0;
+}
+.favorite-list-item-header .delete-list-button:hover {
+    background-color: #fee2e2;
+    color: var(--danger-color);
+    border-color: #fca5a5;
+    box-shadow: none;
+    transform: none;
+}
+.favorite-list-item-header .delete-list-button svg {
+    width: 14px;
+    height: 14px;
+}
+
+
+.favorite-list-item-actions {
+    display: flex;
+    gap: 0.75rem;
+    border-top: 1px solid var(--border-light);
+    padding-top: 1rem;
+    margin-top: auto; /* Empurra para baixo */
+}
+
+.favorite-list-item-actions .button {
+    flex: 1; /* Faz botões ocuparem espaço igual */
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    text-align: center;
+    justify-content: center;
+}
+
+.favorite-list-item-actions .view-edit-button {
+    /* Estilo secundário */
+    background-color: var(--bg-white);
+    color: var(--text-medium);
+    border: 1px solid var(--border-medium);
+}
+.favorite-list-item-actions .view-edit-button:hover {
+     background-color: var(--bg-gray);
+     border-color: var(--border-medium);
+     color: var(--text-dark);
+}
+
+.favorite-list-item-actions .borrow-list-button {
+    /* Estilo primário */
+    background-color: var(--success-color); /* Verde para ação de pegar */
+    color: var(--text-white);
+    border: 1px solid var(--success-color);
+}
+.favorite-list-item-actions .borrow-list-button:hover {
+    background-color: #059669; /* Verde mais escuro */
+    border-color: #059669;
+}

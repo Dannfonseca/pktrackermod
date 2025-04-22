@@ -43,3 +43,50 @@ principal em telas maiores para acomodar a sidebar fixa.
         padding: 1.5rem 0;
     }
 }
+
+
+
+.favorites-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-light);
+    flex-wrap: wrap; /* Para mobile */
+    gap: 1rem;
+}
+
+.favorites-header h2 {
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0;
+}
+
+.favorites-header #addNewListButton {
+    padding: 0.7rem 1.3rem;
+}
+.favorites-header #addNewListButton svg {
+     width: 16px;
+     height: 16px;
+     margin-right: 0.5rem;
+}
+
+.favorite-lists-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Grid responsivo */
+    gap: 1.5rem;
+}
+
+/* Mensagem de carregamento ou vazio */
+.favorite-lists-container .loading-message,
+.favorite-lists-container .empty-message {
+    grid-column: 1 / -1; /* Ocupa todas as colunas */
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-light);
+    font-style: italic;
+    background-color: var(--bg-gray);
+    border-radius: var(--radius);
+}

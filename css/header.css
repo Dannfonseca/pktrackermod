@@ -2,8 +2,8 @@
 /*
 Estilos para o cabeçalho fixo no topo da aplicação.
 Contém o logo, o botão de menu (hamburguer) para mobile,
-e botões de ação (Treinadores, Histórico, Tema).
-Ícones substituem texto em botões de ação no mobile.
+e botões de ação (Listas, Treinadores, Histórico, Tema).
+Botões de ação agora são apenas ícones em todas as telas, com tamanho e cor uniformes.
 */
 .header {
     background-color: var(--bg-white);
@@ -35,7 +35,7 @@ body.dark-mode .header {
 .header-left, .header-right {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem; /* Espaço ajustado para botões de ícone */
 }
 
 .logo {
@@ -98,6 +98,8 @@ body.dark-mode .header {
     justify-content: center;
     transition: background-color var(--transition-fast), color var(--transition-fast);
     line-height: 1;
+    width: 38px; /* Tamanho fixo */
+    height: 38px;
 }
 #themeToggleButton:hover {
     background-color: var(--bg-gray);
@@ -109,13 +111,50 @@ body.dark-mode .header {
     display: block;
 }
 
-/* Estilo padrão dos botões de ação no header (desktop) */
-.header-right .button svg {
-    width: 18px; /* Tamanho padrão do ícone */
-    height: 18px;
-    margin-right: 0.4rem; /* Espaço entre ícone e texto */
+/* <<< MODIFICADO: Estilo GERAL e UNIFICADO para botões de ação (ícones) no header >>> */
+.header-right .button {
+    padding: 0.6rem;        /* Padding uniforme */
+    min-width: 38px;        /* Largura mínima uniforme */
+    min-height: 38px;       /* Altura mínima uniforme */
+    width: 38px;            /* Largura fixa */
+    height: 38px;           /* Altura fixa */
+    gap: 0;                 /* Remove gap interno */
+    justify-content: center;/* Centraliza o ícone */
+    border: 1px solid var(--border-medium); /* Borda padrão secundária */
+    background-color: var(--bg-white);      /* Fundo padrão secundário */
+    color: var(--text-medium);              /* Cor do ícone padrão secundário */
+    line-height: 1;         /* Garante alinhamento vertical */
+    /* Remove herança de font-size que poderia afetar tamanho */
+    font-size: inherit;
+}
+.header-right .button:hover {
+    background-color: var(--bg-gray);       /* Hover padrão secundário */
+    border-color: var(--border-medium);
+    color: var(--text-dark);
+}
+/* Garante foco visível consistente */
+.header-right .button:focus-visible {
+     outline: none;
+     box-shadow: 0 0 0 3px var(--focus-ring-color);
 }
 
+
+/* Remove texto (span) DENTRO dos botões específicos */
+#favoritesButton span,
+#manageTrainersButton span,
+#historyButton span {
+    display: none;
+}
+
+/* Garante que o SVG não tenha margem extra e tamanho consistente */
+#favoritesButton svg,
+#manageTrainersButton svg,
+#historyButton svg {
+    margin: 0; /* Sem margem */
+    width: 20px; /* Tamanho consistente do ícone */
+    height: 20px;
+    display: block; /* Garante que o SVG se comporte como bloco */
+}
 
 /* Responsividade */
 @media (max-width: 767px) {
@@ -125,33 +164,5 @@ body.dark-mode .header {
     .header .container {
         padding: 0 1rem; /* Menor padding no mobile */
     }
-    .header-right {
-        gap: 0.35rem; /* Menor espaço entre botões no mobile */
-    }
-
-    /* Ajuste geral para botões no header direito no mobile */
-    .header-right .button,
-    #themeToggleButton {
-        padding: 0.5rem; /* Padding uniforme para botões de ícone */
-        min-width: 36px; /* Garante um tamanho mínimo clicável */
-        min-height: 36px;
-        gap: 0; /* Remove gap interno se houver */
-        justify-content: center; /* Centraliza o ícone */
-    }
-
-    /* <<< NOVO: Esconde o texto (span) DENTRO dos botões específicos >>> */
-    #manageTrainersButton span,
-    #historyButton span {
-        display: none;
-    }
-
-    /* <<< NOVO: Garante que o SVG não tenha margem extra no mobile >>> */
-    #manageTrainersButton svg,
-    #historyButton svg {
-        margin-right: 0; /* Remove margem direita */
-         width: 20px; /* Ajusta tamanho do ícone se necessário */
-         height: 20px;
-    }
-
-     
+     /* Os estilos de botão de ícone agora são globais, não precisam ser repetidos aqui */
 }

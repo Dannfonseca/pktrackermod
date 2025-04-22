@@ -1,28 +1,30 @@
 // TODOLISTPOKEMON/js/modals.js
 /**
  * Gerencia a lógica específica para os modais da aplicação:
- * ... (comentários anteriores) ...
- * - Devolução Parcial: Abre/fecha, lista pokémons, trata seleção, senha e confirmação
- * (agora usando endpoint único para devolução múltipla).
+ * ... (demais funções) ...
+ * - Devolução Parcial: Abre/fecha, lista pokémons agrupados por clã (com checkbox "Selecionar Todos"), trata seleção, senha e confirmação.
+ * ... (demais funções) ...
  */
 import { dom } from './domElements.js';
-import { clanData } from './config.js';
-// <<< NOVO: Importa returnMultiplePokemonAPI e remove returnPokemonAPI daqui >>>
+import { clanData } from './config.js'; // <<< Importa clanData para usar as cores >>>
 import {
     addPokemonAPI, fetchActiveHistory, fetchAllHistory,
     addTrainerAPI, fetchTrainersAPI, deleteTrainerAPI,
-    returnMultiplePokemonAPI // Importa a nova função
+    returnMultiplePokemonAPI,
+    fetchAllPokemonsByClanAPI, createFavoriteList, fetchListDetails,
+    updateFavoriteList, deleteFavoriteList, borrowFavoriteList
 } from './api.js';
 import { displayError, displaySuccess, showSpinner, hideSpinner } from './ui.js';
 import { getState, setActiveHistoryGroupIndex, setPartialReturnSelection, togglePartialReturnSelection, clearPartialReturnSelection } from './state.js';
 import { renderActivePokemons } from './homeView.js';
 import { loadClanView } from './clanView.js';
+import { loadFavoritesView } from './favoriteView.js';
 
 const LOCAL_ADMIN_PASSWORD_FOR_CHECK = 'russelgay24';
 
+let allClanPokemonsCache = null;
 
-// --- Modal Adicionar Pokémon ---
-// (Funções open/close/loadClans/handleAddPokemonFormSubmit permanecem as mesmas)
+// --- Funções Adicionar Pokémon, Treinador, Gerenciar Treinadores (sem alterações) ---
 export function openAddPokemonModal() {
     loadClansInModalSelect();
     if (dom.addPokemonModal) dom.addPokemonModal.style.display = 'flex';
@@ -66,6 +68,7 @@ export async function handleAddPokemonFormSubmit(event) {
         const result = await addPokemonAPI(clan, name, item);
         displaySuccess(result.message || `Pokémon "${name}" adicionado ao clã ${clan} com sucesso!`);
         closeAddPokemonModal();
+        allClanPokemonsCache = null;
         if (getState().currentClan === clan) {
             loadClanView(clan);
         }
@@ -75,9 +78,6 @@ export async function handleAddPokemonFormSubmit(event) {
         if(submitButton) submitButton.disabled = false;
     }
 }
-
-// --- Modal Adicionar Treinador (Formulário) ---
-// (Funções open/close/handleAddTrainerFormSubmit permanecem as mesmas)
 export function openAddTrainerModal() {
     if (dom.addTrainerModal) {
         dom.addTrainerModal.style.display = 'flex';
@@ -118,29 +118,21 @@ export async function handleAddTrainerFormSubmit(event) {
         }
     } finally { if (submitButton) submitButton.disabled = false; }
 }
-
-
-// --- Modal Gerenciar Treinadores (Lista) ---
-// (Funções open/close/populate/handleDelete permanecem as mesmas)
 export async function openManageTrainersModal() {
     if (!dom.manageTrainersModal || !dom.trainerListContainer) {
         console.error("Modal de Gerenciamento de Treinadores ou container da lista não encontrado."); return;
     }
-    dom.trainerListContainer.innerHTML = '';
+    dom.trainerListContainer.innerHTML = '<p class="loading-message" style="margin:0; padding: 1rem;">Carregando treinadores...</p>';
     dom.manageTrainersModal.style.display = 'flex';
-    showSpinner();
     try {
         const trainers = await fetchTrainersAPI();
-        hideSpinner();
         if (trainers && trainers.length > 0) {
             populateTrainerList(trainers);
         } else {
-            console.log("Nenhum treinador encontrado.");
-            dom.trainerListContainer.innerHTML = '';
+            dom.trainerListContainer.innerHTML = '<p class="empty-message" style="margin:0; padding: 1rem;">Nenhum treinador cadastrado.</p>';
         }
     } catch (error) {
-        hideSpinner();
-        dom.trainerListContainer.innerHTML = `<p class="error-message" style="margin: 0;">Erro ao carregar treinadores.</p>`;
+        dom.trainerListContainer.innerHTML = `<p class="error-message" style="margin: 0; padding: 1rem;">Erro ao carregar treinadores.</p>`;
     }
 }
 export function closeManageTrainersModal() {
@@ -158,9 +150,7 @@ function populateTrainerList(trainers) {
         infoDiv.className = 'trainer-info';
         const nameSpan = document.createElement('span');
         nameSpan.className = 'trainer-name'; nameSpan.textContent = trainer.name;
-        const emailSpan = document.createElement('span');
-        emailSpan.className = 'trainer-email'; emailSpan.textContent = trainer.email;
-        infoDiv.appendChild(nameSpan); infoDiv.appendChild(emailSpan);
+        infoDiv.appendChild(nameSpan);
         const deleteButton = document.createElement('button');
         deleteButton.className = 'delete-button small-delete-button';
         deleteButton.dataset.trainerId = trainer.id;
@@ -195,53 +185,123 @@ export async function handleDeleteTrainer(button) {
         if (listItem) listItem.remove();
         else openManageTrainersModal();
         if (dom.trainerListContainer && dom.trainerListContainer.children.length === 0) {
-             console.log("Lista de treinadores ficou vazia.");
+             dom.trainerListContainer.innerHTML = '<p class="empty-message" style="margin:0; padding: 1rem;">Nenhum treinador cadastrado.</p>';
         }
     } catch (error) {
         hideSpinner();
         console.error(`Erro ao deletar treinador ${trainerId}:`, error);
+        displayError(error.message || "Erro ao deletar treinador.");
     }
 }
 
 
-// --- Modal Devolução Parcial (com validação de senha) ---
-// (Funções open/close/handleToggle permanecem as mesmas)
+// --- Modal Devolução Parcial (com "Selecionar Todos" e Agrupamento por Clã) ---
+
+// <<< MODIFICADO: Renderiza a lista agrupada por clã >>>
 export async function openPartialReturnModal(groupIndex) {
     setActiveHistoryGroupIndex(groupIndex);
     clearPartialReturnSelection();
     const passwordInput = document.getElementById('partialReturnPassword');
+    const selectAllCheckbox = document.getElementById('selectAllPartialReturn');
+    const listContainer = dom.partialReturnListContainer; // Renomeado para clareza
+
     if (passwordInput) passwordInput.value = '';
-    if(!dom.partialReturnListContainer || !dom.partialReturnModal) return;
-    showSpinner();
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    }
+    if (!listContainer || !dom.partialReturnModal) {
+        console.error("Elementos do modal de devolução parcial não encontrados.");
+        return;
+    }
+
+    listContainer.innerHTML = '<p class="loading-message">Carregando Pokémons...</p>';
+    dom.partialReturnModal.style.display = 'flex';
+
     try {
         const activeGroups = await fetchActiveHistory();
-        hideSpinner();
         const group = activeGroups[groupIndex];
+
         if (!group || !group.pokemons || !Array.isArray(group.pokemons)) {
             displayError("Grupo de empréstimo não encontrado ou inválido.");
             closePartialReturnModal(); return;
         }
-        dom.partialReturnListContainer.innerHTML = '';
-        group.pokemons.forEach(pokemon => {
-            const pokemonName = pokemon.name;
-            if(!pokemonName) return;
-            const item = document.createElement('div');
-            item.className = 'partial-return-item'; item.dataset.pokemonName = pokemonName;
-            const nameDiv = document.createElement('div');
-            nameDiv.className = 'pokemon-name'; nameDiv.textContent = pokemonName;
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox'; checkbox.className = 'partial-return-checkbox';
-            checkbox.dataset.action = 'toggle-partial-return'; checkbox.dataset.pokemonName = pokemonName;
-            item.appendChild(nameDiv); item.appendChild(checkbox);
-            dom.partialReturnListContainer.appendChild(item);
-        });
-        dom.partialReturnModal.style.display = 'flex';
+
+        listContainer.innerHTML = ''; // Limpa o loading/conteúdo anterior
+
+        if (group.pokemons.length === 0) {
+            listContainer.innerHTML = '<p class="empty-message">Nenhum Pokémon neste grupo.</p>';
+            if (selectAllCheckbox) selectAllCheckbox.disabled = true;
+        } else {
+            if (selectAllCheckbox) selectAllCheckbox.disabled = false;
+
+            // Agrupa Pokémons por clã
+            const pokemonsByClan = group.pokemons.reduce((acc, pokemon) => {
+                const pokeName = pokemon?.name?.trim();
+                const clanName = pokemon?.clan || 'unknown'; // Usa 'unknown' se não houver clã
+
+                if (!pokeName) {
+                    console.warn("Pokémon sem nome encontrado no grupo de devolução:", pokemon);
+                    return acc;
+                }
+
+                if (!acc[clanName]) {
+                    acc[clanName] = [];
+                }
+                acc[clanName].push(pokeName); // Armazena apenas o nome, já que a seleção é por nome
+                return acc;
+            }, {});
+
+             // Ordena os clãs
+             const sortedClans = Object.keys(pokemonsByClan).sort((a, b) => {
+                 if (a === 'unknown') return 1;
+                 if (b === 'unknown') return -1;
+                 return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+             });
+
+             // Renderiza os clãs e seus pokémons
+             sortedClans.forEach(clanName => {
+                 const clanHeader = document.createElement('div'); // Usando div para o header
+                 clanHeader.className = 'partial-return-clan-header';
+                 clanHeader.textContent = clanName === 'unknown' ? 'Clã Desconhecido' : (clanName.charAt(0).toUpperCase() + clanName.slice(1));
+                 // Aplica a cor do clã
+                 const color = clanData[clanName]?.color || 'var(--text-medium)';
+                 clanHeader.style.color = color;
+                 listContainer.appendChild(clanHeader);
+
+                 // Renderiza os pokémons deste clã
+                 pokemonsByClan[clanName].forEach(pokemonName => {
+                     const item = document.createElement('div');
+                     item.className = 'partial-return-item';
+                     item.dataset.pokemonName = pokemonName;
+
+                     const nameDiv = document.createElement('div');
+                     nameDiv.className = 'pokemon-name';
+                     nameDiv.textContent = pokemonName;
+
+                     const checkbox = document.createElement('input');
+                     checkbox.type = 'checkbox';
+                     checkbox.className = 'partial-return-checkbox';
+                     checkbox.dataset.action = 'toggle-partial-return';
+                     checkbox.dataset.pokemonName = pokemonName;
+
+                     item.appendChild(nameDiv);
+                     item.appendChild(checkbox);
+                     listContainer.appendChild(item); // Adiciona item após o header do clã
+                 });
+             });
+        }
+
         if (passwordInput) passwordInput.focus();
+
     } catch (error) {
-        hideSpinner(); console.error("Erro ao abrir modal de devolução parcial:", error);
-        closePartialReturnModal();
+        console.error("Erro ao abrir modal de devolução parcial:", error);
+        listContainer.innerHTML = '<p class="error-message">Erro ao carregar Pokémons.</p>';
+        if (selectAllCheckbox) selectAllCheckbox.disabled = true;
+        // Não fecha o modal, deixa o erro visível
     }
 }
+
 export function closePartialReturnModal() {
     if(dom.partialReturnModal) dom.partialReturnModal.style.display = 'none';
     if(dom.partialReturnListContainer) dom.partialReturnListContainer.innerHTML = '';
@@ -250,16 +310,68 @@ export function closePartialReturnModal() {
     const passwordInput = document.getElementById('partialReturnPassword');
     if (passwordInput) passwordInput.value = '';
 }
+
 export function handleTogglePartialReturn(checkbox) {
     const pokemonName = checkbox.dataset.pokemonName;
     const itemDiv = checkbox.closest('.partial-return-item');
-    if (pokemonName && itemDiv) {
-        togglePartialReturnSelection(pokemonName);
-        itemDiv.classList.toggle('selected', checkbox.checked);
+    if (!pokemonName || !itemDiv) return;
+
+    togglePartialReturnSelection(pokemonName);
+    itemDiv.classList.toggle('selected', checkbox.checked);
+
+    const allCheckboxes = dom.partialReturnListContainer?.querySelectorAll('.partial-return-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllPartialReturn');
+
+    if (!selectAllCheckbox || !allCheckboxes || allCheckboxes.length === 0) return;
+
+    const totalItems = allCheckboxes.length;
+    const checkedItems = Array.from(allCheckboxes).filter(cb => cb.checked).length;
+
+    if (checkedItems === totalItems) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+    } else if (checkedItems === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
     }
 }
 
-// <<< REESCRITA: Agora chama a API uma única vez >>>
+export function handleSelectAllPartialReturn() {
+    const selectAllCheckbox = document.getElementById('selectAllPartialReturn');
+    const allCheckboxes = dom.partialReturnListContainer?.querySelectorAll('.partial-return-checkbox');
+
+    if (!selectAllCheckbox || !allCheckboxes || allCheckboxes.length === 0) {
+        console.warn("Checkbox 'Select All' ou lista de pokémons não encontrada.");
+        return;
+    }
+
+    const shouldBeChecked = selectAllCheckbox.checked;
+    let newSelectionState = {};
+
+    console.log(`Select All clicado. Novo estado deve ser: ${shouldBeChecked}`);
+
+    allCheckboxes.forEach(checkbox => {
+        const pokemonName = checkbox.dataset.pokemonName;
+        const itemDiv = checkbox.closest('.partial-return-item');
+
+        checkbox.checked = shouldBeChecked;
+        if (itemDiv) {
+             itemDiv.classList.toggle('selected', shouldBeChecked);
+        }
+
+        if (shouldBeChecked && pokemonName) {
+            newSelectionState[pokemonName] = true;
+        }
+    });
+
+    setPartialReturnSelection(newSelectionState);
+    selectAllCheckbox.indeterminate = false;
+    console.log('Novo estado partialReturnSelection:', getState().partialReturnSelection);
+}
+
 export async function handleConfirmPartialReturn() {
     const selection = getState().partialReturnSelection;
     const pokemonsToReturnNames = Object.keys(selection).filter(name => selection[name]);
@@ -274,39 +386,37 @@ export async function handleConfirmPartialReturn() {
 
     const confirmButton = dom.confirmPartialReturnButton;
     if (confirmButton) confirmButton.disabled = true;
+    showSpinner();
 
     try {
-        // Busca o histórico COMPLETO para encontrar os IDs corretos das entradas a serem devolvidas
         const fullHistory = await fetchAllHistory();
-        const activeGroups = await fetchActiveHistory(); // Rebusca grupos ativos para pegar data/nome atuais
+        const activeGroups = await fetchActiveHistory();
         const targetGroup = activeGroups[groupIndex];
 
         if (!targetGroup || !targetGroup.trainer_name || !targetGroup.date) {
-             displayError("Erro ao revalidar grupo de histórico ativo."); closePartialReturnModal(); return;
+             hideSpinner(); displayError("Erro ao revalidar grupo de histórico ativo."); closePartialReturnModal(); return;
         }
 
-        // Filtra o histórico completo para encontrar os IDs das entradas específicas que correspondem
-        // aos Pokémons selecionados DENTRO do grupo ativo (mesmo treinador, mesma data de empréstimo)
         const historyEntryIdsToReturn = fullHistory
             .filter(entry =>
-                !entry.returned && // Apenas os não devolvidos
-                entry.trainer_name === targetGroup.trainer_name && // Mesmo treinador
-                entry.date === targetGroup.date && // Mesma data de empréstimo original
-                pokemonsToReturnNames.includes(entry.pokemon_name) // Nomes dos Pokémons selecionados no modal
+                !entry.returned &&
+                entry.trainer_id === targetGroup.trainer_id &&
+                entry.date === targetGroup.date &&
+                pokemonsToReturnNames.includes(entry.pokemon_name)
             )
-            .map(entry => entry.id); // Pega apenas os IDs
+            .map(entry => entry.id);
 
         if (historyEntryIdsToReturn.length !== pokemonsToReturnNames.length) {
              console.warn("Discrepância entre Pokémons selecionados e IDs encontrados no histórico.", { selected: pokemonsToReturnNames, foundIds: historyEntryIdsToReturn });
-             displayError('Erro ao mapear seleção para registros do histórico. A lista pode estar desatualizada.');
-             renderActivePokemons(); // Atualiza a lista de ativos
+             hideSpinner(); displayError('Erro ao mapear seleção para registros do histórico. A lista pode estar desatualizada.');
+             renderActivePokemons();
              closePartialReturnModal();
              if (confirmButton) confirmButton.disabled = false;
              return;
         }
 
         if (historyEntryIdsToReturn.length === 0) {
-             displayError('Não foi possível encontrar os registros correspondentes para devolução.');
+             hideSpinner(); displayError('Não foi possível encontrar os registros correspondentes para devolução.');
              closePartialReturnModal();
              renderActivePokemons();
               if (confirmButton) confirmButton.disabled = false;
@@ -315,29 +425,345 @@ export async function handleConfirmPartialReturn() {
 
         console.log(`[Partial Return] IDs a devolver: ${historyEntryIdsToReturn.join(', ')}`);
 
-        // <<< CHAMADA ÚNICA PARA A NOVA API >>>
         const result = await returnMultiplePokemonAPI(historyEntryIdsToReturn, trainerPassword);
+        hideSpinner();
 
-        // Sucesso!
         displaySuccess(result.message || `${historyEntryIdsToReturn.length} Pokémon(s) devolvido(s) com sucesso!`);
-        closePartialReturnModal(); // Fecha o modal
+        closePartialReturnModal();
 
     } catch (error) {
-        // Trata erros específicos da API ou erros gerais
+        hideSpinner();
         console.error("Erro ao confirmar devolução parcial:", error);
         if (error.message && error.message.toLowerCase().includes('senha do treinador inválida')) {
             displayError('Senha do treinador inválida. Nenhum Pokémon foi devolvido.');
             if(passwordInput) passwordInput.focus();
         } else {
-            // Usa a mensagem de erro da API se disponível, senão uma genérica
             displayError(error.message || "Ocorreu um erro inesperado durante a devolução.");
         }
-         // Não fecha o modal se a senha/outro erro ocorreu
     } finally {
-         // Atualiza a UI independentemente de sucesso ou falha
          renderActivePokemons();
          const currentViewClan = getState().currentClan;
-         if (currentViewClan !== 'home') loadClanView(currentViewClan);
-         if (confirmButton) confirmButton.disabled = false; // Reabilita o botão
+         if (currentViewClan !== 'home' && currentViewClan !== 'favorites') {
+              loadClanView(currentViewClan);
+         }
+         if (confirmButton) confirmButton.disabled = false;
     }
+}
+
+// --- Funções Auxiliares e Modais de Listas Favoritas ---
+async function loadAllClanPokemonsForModal() {
+    if (allClanPokemonsCache) {
+        return allClanPokemonsCache;
+    }
+    try {
+        allClanPokemonsCache = await fetchAllPokemonsByClanAPI();
+        return allClanPokemonsCache;
+    } catch (error) {
+        console.error("Erro ao buscar todos os Pokémons por clã para o modal:", error);
+        allClanPokemonsCache = null;
+        throw error;
+    }
+}
+function renderPokemonSelectionList(container, allClanPokemons, selectedPokemonIds = [], searchString = '') {
+    if (!container) return;
+    container.innerHTML = '';
+    const lowerSearch = searchString.toLowerCase().trim();
+    let countRendered = 0;
+
+    Object.entries(allClanPokemons).forEach(([clanName, pokemons]) => {
+        const filteredPokemons = pokemons.filter(p =>
+            p.name.toLowerCase().includes(lowerSearch) ||
+            (p.held_item && p.held_item.toLowerCase().includes(lowerSearch))
+        );
+
+        if (filteredPokemons.length > 0) {
+            const clanGroupDiv = document.createElement('div');
+            clanGroupDiv.className = 'modal-clan-group';
+
+            const clanHeader = document.createElement('h4');
+            clanHeader.className = 'modal-pokemon-clan-header';
+            clanHeader.textContent = clanName;
+            clanGroupDiv.appendChild(clanHeader);
+
+            filteredPokemons.forEach(pokemon => {
+                countRendered++;
+                const isSelected = selectedPokemonIds.includes(pokemon.id);
+                const isAvailable = pokemon.status === 'available';
+
+                const item = document.createElement('div');
+                item.className = `modal-pokemon-item ${isSelected ? 'selected' : ''} ${!isAvailable ? 'unavailable' : ''}`;
+                item.dataset.pokemonId = pokemon.id;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = isSelected;
+                checkbox.id = `modal-poke-${pokemon.id}`;
+                checkbox.dataset.pokemonId = pokemon.id;
+
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                const statusTag = !isAvailable ? '<span class="modal-pokemon-status-tag">(Em uso)</span>' : '';
+                label.innerHTML = `${pokemon.name} ${pokemon.held_item ? `(${pokemon.held_item})` : ''} ${statusTag}`;
+
+                item.appendChild(checkbox);
+                item.appendChild(label);
+                clanGroupDiv.appendChild(item);
+            });
+
+            container.appendChild(clanGroupDiv);
+        }
+    });
+
+    if (countRendered === 0) {
+        container.innerHTML = '<p class="empty-message">Nenhum Pokémon encontrado.</p>';
+    }
+}
+function getSelectedPokemonIdsFromModal(container) {
+    if (!container) return [];
+    const selectedCheckboxes = container.querySelectorAll('input[type="checkbox"]:checked');
+    return Array.from(selectedCheckboxes).map(cb => cb.dataset.pokemonId);
+}
+export async function openCreateListModal() {
+    if (!dom.createListModal || !dom.createListForm || !dom.createListPokemonSelection || !dom.newListNameInput || !dom.createListPokemonSearch) {
+        console.error("Elementos do modal de criar lista não encontrados."); return;
+    }
+    dom.createListForm.reset();
+    dom.createListPokemonSelection.innerHTML = '<p class="loading-message">Carregando Pokémons...</p>';
+    dom.createListModal.style.display = 'flex';
+    dom.newListNameInput.focus();
+
+    try {
+        const pokemons = await loadAllClanPokemonsForModal();
+        renderPokemonSelectionList(dom.createListPokemonSelection, pokemons);
+    } catch (error) {
+        dom.createListPokemonSelection.innerHTML = '<p class="error-message">Erro ao carregar Pokémons.</p>';
+    }
+}
+export function closeCreateListModal() {
+    if (dom.createListModal) dom.createListModal.style.display = 'none';
+}
+export function handleCreateListPokemonSearch() {
+    if (!dom.createListPokemonSearch || !dom.createListPokemonSelection || !allClanPokemonsCache) return;
+    const searchTerm = dom.createListPokemonSearch.value;
+    const selectedIds = getSelectedPokemonIdsFromModal(dom.createListPokemonSelection);
+    renderPokemonSelectionList(dom.createListPokemonSelection, allClanPokemonsCache, selectedIds, searchTerm);
+}
+export async function handleCreateListSubmit(event) {
+    event.preventDefault();
+    if (!dom.newListNameInput || !dom.createListPokemonSelection || !dom.confirmCreateListButton || !document.getElementById('createListTrainerPassword')) return;
+
+    const listName = dom.newListNameInput.value.trim();
+    const selectedPokemonIds = getSelectedPokemonIdsFromModal(dom.createListPokemonSelection);
+    const trainerPassword = document.getElementById('createListTrainerPassword').value;
+
+    if (!listName) { displayError("O nome da lista é obrigatório."); dom.newListNameInput.focus(); return; }
+    if (selectedPokemonIds.length === 0) { displayError("Selecione pelo menos um Pokémon para a lista."); return; }
+    if (!trainerPassword) { displayError("A senha do treinador é obrigatória para criar a lista."); document.getElementById('createListTrainerPassword').focus(); return; }
+
+    dom.confirmCreateListButton.disabled = true;
+    showSpinner();
+
+    try {
+        const result = await createFavoriteList(listName, selectedPokemonIds, trainerPassword);
+        hideSpinner();
+        displaySuccess(result.message || `Lista "${listName}" criada com sucesso!`);
+        closeCreateListModal();
+        loadFavoritesView();
+    } catch (error) {
+        hideSpinner();
+        console.error("Erro ao criar lista favorita:", error);
+    } finally {
+        if (dom.confirmCreateListButton) dom.confirmCreateListButton.disabled = false;
+    }
+}
+export async function openViewEditListModal(listId) {
+     if (!dom.viewEditListModal || !dom.editListForm || !dom.editListIdInput || !dom.editListNameInput || !dom.editListPokemonSelection || !dom.editListPokemonSearch || !document.getElementById('editListTrainerPassword')) {
+        console.error("Elementos do modal de editar lista não encontrados."); return;
+    }
+    dom.editListForm.reset();
+    dom.editListPokemonSearch.value = '';
+    dom.editListPokemonSelection.innerHTML = '<p class="loading-message">Carregando detalhes da lista...</p>';
+    dom.viewEditListModal.style.display = 'flex';
+
+    try {
+        showSpinner();
+        const listDetails = await fetchListDetails(listId);
+        const allPokemons = await loadAllClanPokemonsForModal();
+        hideSpinner();
+
+        dom.editListIdInput.value = listDetails.id;
+        dom.editListNameInput.value = listDetails.name;
+        document.getElementById('editListTrainerPassword').value = '';
+
+        const selectedIds = listDetails.pokemons.map(p => p.id);
+        renderPokemonSelectionList(dom.editListPokemonSelection, allPokemons, selectedIds);
+
+        dom.editListNameInput.focus();
+
+    } catch (error) {
+        hideSpinner();
+        console.error(`Erro ao carregar detalhes/pokémons para editar lista ${listId}:`, error);
+        closeViewEditListModal();
+    }
+}
+export function closeViewEditListModal() {
+     if (dom.viewEditListModal) dom.viewEditListModal.style.display = 'none';
+}
+export function handleEditListPokemonSearch() {
+    if (!dom.editListPokemonSearch || !dom.editListPokemonSelection || !allClanPokemonsCache) return;
+    const searchTerm = dom.editListPokemonSearch.value;
+    const selectedIds = getSelectedPokemonIdsFromModal(dom.editListPokemonSelection);
+    renderPokemonSelectionList(dom.editListPokemonSelection, allClanPokemonsCache, selectedIds, searchTerm);
+}
+export async function handleUpdateListSubmit(event) {
+    event.preventDefault();
+    if (!dom.editListIdInput || !dom.editListNameInput || !dom.editListPokemonSelection || !dom.confirmEditListButton || !document.getElementById('editListTrainerPassword')) return;
+
+    const listId = dom.editListIdInput.value;
+    const newName = dom.editListNameInput.value.trim();
+    const newPokemonIds = getSelectedPokemonIdsFromModal(dom.editListPokemonSelection);
+    const trainerPassword = document.getElementById('editListTrainerPassword').value;
+
+    if (!newName) { displayError("O nome da lista é obrigatório."); dom.editListNameInput.focus(); return; }
+    if (!trainerPassword) { displayError("A senha do treinador é obrigatória para editar a lista."); document.getElementById('editListTrainerPassword').focus(); return; }
+
+    dom.confirmEditListButton.disabled = true;
+    showSpinner();
+
+    try {
+        const result = await updateFavoriteList(listId, { name: newName, pokemonIds: newPokemonIds }, trainerPassword);
+        hideSpinner();
+        displaySuccess(result.message || `Lista "${newName}" atualizada com sucesso!`);
+        closeViewEditListModal();
+        loadFavoritesView();
+    } catch (error) {
+        hideSpinner();
+        console.error(`Erro ao atualizar lista ${listId}:`, error);
+    } finally {
+        if (dom.confirmEditListButton) dom.confirmEditListButton.disabled = false;
+    }
+}
+export async function openBorrowListModal(listId, listName) {
+    if (!dom.borrowListModal || !dom.borrowListModalTitle || !dom.borrowListIdInput || !dom.borrowListPokemonsPreview || !dom.borrowListTrainerPasswordInput || !dom.borrowListCommentInput) {
+        console.error("Elementos do modal de usar lista não encontrados."); return;
+    }
+    dom.borrowListModalTitle.textContent = `Usar Lista: ${listName}`;
+    dom.borrowListIdInput.value = listId;
+    dom.borrowListTrainerPasswordInput.value = '';
+    dom.borrowListCommentInput.value = '';
+    dom.borrowListPokemonsPreview.innerHTML = '<li class="loading-message">Carregando detalhes da lista...</li>';
+    dom.borrowListModal.style.display = 'flex';
+
+    try {
+        const listDetails = await fetchListDetails(listId);
+        dom.borrowListPokemonsPreview.innerHTML = '';
+
+        if (!listDetails.pokemons || listDetails.pokemons.length === 0) {
+             dom.borrowListPokemonsPreview.innerHTML = '<li class="empty-message">Esta lista está vazia.</li>';
+             if(dom.confirmBorrowListButton) dom.confirmBorrowListButton.disabled = true;
+             return;
+        }
+
+        listDetails.pokemons.forEach(pokemon => {
+            const li = document.createElement('li');
+            li.className = pokemon.status === 'available' ? 'available' : 'unavailable';
+            li.textContent = pokemon.name + (pokemon.held_item ? ` (${pokemon.held_item})` : '');
+            li.title = pokemon.status === 'available' ? 'Disponível' : 'Indisponível';
+            dom.borrowListPokemonsPreview.appendChild(li);
+        });
+
+        const anyAvailable = listDetails.pokemons.some(p => p.status === 'available');
+        if (!anyAvailable) {
+             dom.borrowListPokemonsPreview.insertAdjacentHTML('beforeend', '<li class="warning-message">Nenhum Pokémon desta lista está disponível no momento.</li>');
+        }
+         if(dom.confirmBorrowListButton) dom.confirmBorrowListButton.disabled = !anyAvailable;
+
+        dom.borrowListTrainerPasswordInput.focus();
+
+    } catch (error) {
+        console.error(`Erro ao carregar detalhes da lista ${listId} para empréstimo:`, error);
+        dom.borrowListPokemonsPreview.innerHTML = '<li class="error-message">Erro ao carregar Pokémons da lista.</li>';
+        if(dom.confirmBorrowListButton) dom.confirmBorrowListButton.disabled = true;
+    }
+}
+export function closeBorrowListModal() {
+    if (dom.borrowListModal) dom.borrowListModal.style.display = 'none';
+}
+export async function handleConfirmBorrowList() {
+    if (!dom.borrowListIdInput || !dom.borrowListTrainerPasswordInput || !dom.borrowListCommentInput || !dom.confirmBorrowListButton) return;
+
+    const listId = dom.borrowListIdInput.value;
+    const trainerPassword = dom.borrowListTrainerPasswordInput.value.trim();
+    const comment = dom.borrowListCommentInput.value.trim();
+
+    if (!trainerPassword) { displayError("Digite sua senha de treinador."); dom.borrowListTrainerPasswordInput.focus(); return; }
+
+    dom.confirmBorrowListButton.disabled = true;
+    showSpinner();
+
+    try {
+        const result = await borrowFavoriteList(listId, trainerPassword, comment);
+        hideSpinner();
+        displaySuccess(result.message || `Pokémons da lista emprestados com sucesso!`);
+        closeBorrowListModal();
+        renderActivePokemons();
+         const currentViewClan = getState().currentClan;
+         if (currentViewClan !== 'home' && currentViewClan !== 'favorites') {
+              loadClanView(currentViewClan);
+         }
+         allClanPokemonsCache = null;
+
+    } catch (error) {
+        hideSpinner();
+        console.error(`Erro ao emprestar lista ${listId}:`, error);
+        if (error.message && error.message.toLowerCase().includes('senha do treinador inválida')) {
+            displayError('Senha do treinador inválida.');
+            if (dom.borrowListTrainerPasswordInput) dom.borrowListTrainerPasswordInput.focus();
+        } else if (error.message && error.message.toLowerCase().includes('disponível')) {
+            displayError(error.message);
+            const listNameElem = dom.borrowListModalTitle;
+            const listName = listNameElem ? listNameElem.textContent.replace('Usar Lista: ', '') : 'esta lista';
+            openBorrowListModal(listId, listName);
+        } else {
+        }
+    } finally {
+        if (dom.borrowListModal.style.display === 'flex' && dom.confirmBorrowListButton) {
+             dom.confirmBorrowListButton.disabled = false;
+        }
+    }
+}
+export async function handleDeleteListClick(listId, listName) {
+     if (!listId) return;
+
+     const password = prompt(`Digite sua senha de Treinador para deletar a lista "${listName}".\n(Ou digite a senha de Admin para forçar a deleção)`);
+
+     if (password === null) return;
+     if (!password) { displayError("Senha é obrigatória para deletar."); return; }
+
+     const isPotentiallyAdmin = password === LOCAL_ADMIN_PASSWORD_FOR_CHECK;
+
+     const confirmMessage = isPotentiallyAdmin
+         ? `ADMIN: Tem certeza que deseja deletar PERMANENTEMENTE a lista "${listName}"?`
+         : `Tem certeza que deseja deletar PERMANENTEMENTE a lista "${listName}"?`;
+
+     if (!confirm(confirmMessage)) {
+         return;
+     }
+
+     showSpinner();
+     try {
+         let credentials = {};
+         if (isPotentiallyAdmin) {
+             credentials.admin_password = password;
+         } else {
+             credentials.trainer_password = password;
+         }
+         await deleteFavoriteList(listId, credentials);
+         hideSpinner();
+         displaySuccess(`Lista "${listName}" deletada com sucesso!`);
+         loadFavoritesView();
+     } catch (error) {
+         hideSpinner();
+         console.error(`Erro ao deletar lista ${listId}:`, error);
+     }
 }
