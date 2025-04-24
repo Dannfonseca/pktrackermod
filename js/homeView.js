@@ -2,21 +2,23 @@
 /**
  * Gerencia a lógica e a renderização da visualização principal (Home).
  * Responsável por exibir o banner de boas-vindas, instruções, cards de clãs
- * e a lista de Pokémons atualmente em uso (ativos), buscando o nome do treinador
- * e o comentário associado ao empréstimo, e agrupando os Pokémons por clã
+ * e a lista de Pokémons atualmente em uso (ativos), buscando o nome do treinador,
+ * o comentário do empréstimo e o item do Pokémon, e agrupando os Pokémons por clã
  * com cabeçalhos coloridos de acordo com o clã.
+ * <<< MODIFICADO: Exibe o held_item do Pokémon ao lado do nome na lista de ativos. >>>
  *
  * Funções Principais:
  * - loadHomeView: Ativa a seção Home e chama a renderização dos Pokémons ativos.
  * - renderActivePokemons: Busca os dados dos empréstimos ativos, agrupa os Pokémons por clã
- * e cria os elementos HTML para exibir cada grupo de empréstimo na lista, aplicando a cor do clã ao cabeçalho.
+ * e cria os elementos HTML para exibir cada grupo de empréstimo na lista, incluindo o item.
  * - handleOpenReturnModal: Chamada quando o botão "Devolver" de um grupo ativo é clicado.
  */
 import { dom } from './domElements.js';
 import { fetchActiveHistory } from './api.js';
 import { openPartialReturnModal } from './modals.js';
 import { formatBrazilianDate, displayError } from './ui.js';
-import { clanData } from './config.js'; // <<< Importa clanData para usar as cores
+import { clanData } from './config.js';
+
 
 export async function loadHomeView() {
     console.log("Carregando Home View...");
@@ -94,12 +96,25 @@ export async function renderActivePokemons() {
             header.appendChild(dateInfo);
             header.appendChild(returnButton);
 
+            item.appendChild(header);
+
+            // Mostra o comentário da TRANSAÇÃO (se existir)
+            if (group.comment) {
+                 const commentDiv = document.createElement('div');
+                 commentDiv.className = 'active-pokemon-comment';
+                 const safeComment = group.comment.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                 commentDiv.innerHTML = `<strong>Comentário:</strong> ${safeComment}`;
+                 item.appendChild(commentDiv);
+            }
+
             const pokemonListDiv = document.createElement('div');
             pokemonListDiv.className = 'active-pokemon-name-list';
 
+            // Agrupa Pokémons por clã, guardando nome E item
             const pokemonsByClan = group.pokemons.reduce((acc, pokemon) => {
                 const pokeName = pokemon?.name?.trim();
                 const clanName = pokemon?.clan || 'unknown';
+                const heldItem = pokemon?.held_item; // <<< Pega o item
 
                 if (!pokeName) {
                     console.warn(`Nome de Pokémon vazio ou inválido no grupo ${index}. Pokémon:`, pokemon);
@@ -109,7 +124,8 @@ export async function renderActivePokemons() {
                 if (!acc[clanName]) {
                     acc[clanName] = [];
                 }
-                acc[clanName].push(pokeName);
+                // <<< Guarda objeto com nome e item >>>
+                acc[clanName].push({ name: pokeName, held_item: heldItem });
                 return acc;
             }, {});
 
@@ -124,33 +140,26 @@ export async function renderActivePokemons() {
                 clanHeader.className = 'active-pokemon-clan-header';
                 clanHeader.textContent = clanName === 'unknown' ? 'Clã Desconhecido' : (clanName.charAt(0).toUpperCase() + clanName.slice(1));
 
-                // <<< MODIFICADO: Define a cor do cabeçalho dinamicamente >>>
-                const color = clanData[clanName]?.color || 'var(--text-medium)'; // Usa cor do clã ou padrão
+                const color = clanData[clanName]?.color || 'var(--text-medium)';
                 clanHeader.style.color = color;
-                // <<< Fim da Modificação >>>
 
                 const clanPokemonList = document.createElement('p');
                 clanPokemonList.className = 'active-pokemon-clan-list';
-                clanPokemonList.textContent = pokemonsByClan[clanName].join(', ');
+
+                // <<< Formata a string para incluir o item >>>
+                clanPokemonList.textContent = pokemonsByClan[clanName]
+                    .map(p => `${p.name}${p.held_item ? ` (${p.held_item})` : ''}`) // Adiciona (Item) se existir
+                    .join(', ');
 
                 pokemonListDiv.appendChild(clanHeader);
                 pokemonListDiv.appendChild(clanPokemonList);
             });
 
-            item.appendChild(header);
             item.appendChild(pokemonListDiv);
-
-            if (group.comment) {
-                 const commentDiv = document.createElement('div');
-                 commentDiv.className = 'active-pokemon-comment';
-                 const safeComment = group.comment.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                 commentDiv.innerHTML = `<strong>Comentário:</strong> ${safeComment}`;
-                 item.appendChild(commentDiv);
-            }
 
             dom.activePokemonsList.appendChild(item);
         });
-        console.log("Pokémons ativos renderizados com agrupamento por clã.");
+        console.log("Pokémons ativos renderizados com item (se houver).");
 
     } catch (error) {
         console.error("Erro CRÍTICO ao renderizar Pokémons ativos:", error);

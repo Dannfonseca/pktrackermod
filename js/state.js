@@ -3,7 +3,8 @@
  * Gerencia o estado mutável da aplicação frontend.
  * Mantém informações como o clã atualmente visualizado, os Pokémons
  * selecionados para empréstimo na Clan View, a seleção de Pokémons
- * nos modais de lista, informações para devolução parcial, etc.
+ * nos modais de lista, informações para devolução parcial (agora por history_id),
+ * a página atual do histórico, etc.
  * Exporta funções para acessar (getState) e modificar (setters) o estado.
  *
  * Estado Gerenciado:
@@ -11,25 +12,24 @@
  * - selectedPokemons: Objeto { pokemonId: true } para Pokémons selecionados na Clan View.
  * - modalPokemonSelection: Objeto { pokemonId: true } para Pokémons selecionados nos modais de Criar/Editar Lista.
  * - activeHistoryGroupIndex: Number | null - Índice do grupo ativo selecionado para devolução.
- * - partialReturnSelection: Objeto { pokemonName: true } para Pokémons selecionados no modal de devolução parcial.
+ * - partialReturnSelection: Objeto { historyEntryId: true } para registros selecionados no modal de devolução parcial.
+ * - historyCurrentPage: Number - Página atual exibida no modal de histórico. <<< NOVO >>>
  * - isDeletingPokemon: Boolean - Flag para controle de concorrência na deleção.
  */
 
 
 let currentState = {
     currentClan: 'home',
-    selectedPokemons: {}, // Seleção principal (Clan View)
-    modalPokemonSelection: {}, // <<< NOVO: Seleção específica dos modais de lista >>>
+    selectedPokemons: {},
+    modalPokemonSelection: {},
     activeHistoryGroupIndex: null,
     partialReturnSelection: {},
+    historyCurrentPage: 1, // <<< NOVO: Página inicial do histórico >>>
     isDeletingPokemon: false,
 };
 
 
 export function getState() {
-    // Retorna uma cópia para evitar mutação externa direta, se necessário,
-    // mas para objetos aninhados, isso ainda permitiria mutação.
-    // Para este caso, retornar a referência direta é mais simples.
     return currentState;
 }
 
@@ -60,7 +60,6 @@ export function clearSelectedPokemons() {
 }
 
 // --- Seleção dos Modais de Lista (Criar/Editar) ---
-// <<< NOVAS FUNÇÕES >>>
 export function setModalPokemonSelection(selection) {
     currentState.modalPokemonSelection = selection;
     console.log('Pokémons selecionados (Modal):', currentState.modalPokemonSelection);
@@ -80,7 +79,6 @@ export function clearModalPokemonSelection() {
     currentState.modalPokemonSelection = {};
     console.log('Seleção (Modal) limpa.');
 }
-// <<< FIM DAS NOVAS FUNÇÕES >>>
 
 
 // --- Devolução Parcial ---
@@ -90,19 +88,28 @@ export function setActiveHistoryGroupIndex(index) {
 
 export function setPartialReturnSelection(selection) {
     currentState.partialReturnSelection = selection;
+    console.log('Seleção devolução parcial (History IDs):', currentState.partialReturnSelection);
 }
 
-export function togglePartialReturnSelection(pokemonName) {
-    if (currentState.partialReturnSelection[pokemonName]) {
-        delete currentState.partialReturnSelection[pokemonName];
+export function togglePartialReturnSelection(historyEntryId) {
+    if (currentState.partialReturnSelection[historyEntryId]) {
+        delete currentState.partialReturnSelection[historyEntryId];
     } else {
-        currentState.partialReturnSelection[pokemonName] = true;
+        currentState.partialReturnSelection[historyEntryId] = true;
     }
-    console.log('Seleção devolução parcial:', currentState.partialReturnSelection);
+    console.log('Seleção devolução parcial (History IDs):', currentState.partialReturnSelection);
 }
 
 export function clearPartialReturnSelection() {
     currentState.partialReturnSelection = {};
+    console.log('Seleção devolução parcial limpa.');
+}
+
+// --- Paginação do Histórico ---
+// <<< NOVA FUNÇÃO >>>
+export function setHistoryCurrentPage(page) {
+    currentState.historyCurrentPage = Math.max(1, page); // Garante que a página seja pelo menos 1
+    console.log('Página atual do Histórico:', currentState.historyCurrentPage);
 }
 
 // --- Controle de Deleção ---

@@ -4,21 +4,20 @@
  * - Adicionar Pokémon: Abre/fecha, carrega clãs no select, trata submissão do form.
  * - Adicionar Treinador: Abre/fecha, trata submissão do form.
  * - Gerenciar Treinadores: Abre/fecha, busca e lista treinadores, trata deleção.
- * - Devolução Parcial: Abre/fecha, lista pokémons agrupados por clã, trata seleção, senha e confirmação.
+ * - Devolução Parcial: Abre/fecha, lista pokémons agrupados por clã, trata seleção por history.id, senha e confirmação. <<< MODIFICADO: Seleção por history.id >>>
  * - Listas Favoritas (Criar/Editar/Usar): Abre/fecha, busca pokémons, lida com busca interna, seleção, senhas e submissões.
- * <<< MODIFICADO: renderPokemonSelectionList agora lê a seleção do estado global 'modalPokemonSelection'. handleCreate/EditListPokemonSearch não precisam mais ler seleção do DOM. handleCreate/EditListSubmit lêem seleção do estado global. Funções de abrir modais limpam/populam o estado 'modalPokemonSelection'. >>>
+ * renderPokemonSelectionList agora lê a seleção do estado global 'modalPokemonSelection'. handleCreate/EditListPokemonSearch não precisam mais ler seleção do DOM. handleCreate/EditListSubmit lêem seleção do estado global. Funções de abrir modais limpam/populam o estado 'modalPokemonSelection'.
  */
 import { dom } from './domElements.js';
 import { clanData } from './config.js';
 import {
-    addPokemonAPI, fetchActiveHistory, fetchAllHistory,
+    addPokemonAPI, fetchActiveHistory, fetchAllHistory, // <<< fetchAllHistory usado em openPartialReturnModal
     addTrainerAPI, fetchTrainersAPI, deleteTrainerAPI,
     returnMultiplePokemonAPI,
     fetchAllPokemonsByClanAPI, createFavoriteList, fetchListDetails,
     updateFavoriteList, deleteFavoriteList, borrowFavoriteList
 } from './api.js';
 import { displayError, displaySuccess, showSpinner, hideSpinner } from './ui.js';
-// <<< MODIFICADO: Importa funções do estado para seleção do modal >>>
 import { getState, setActiveHistoryGroupIndex, setPartialReturnSelection, togglePartialReturnSelection, clearPartialReturnSelection, clearModalPokemonSelection, setModalPokemonSelection } from './state.js';
 import { renderActivePokemons } from './homeView.js';
 import { loadClanView } from './clanView.js';
@@ -28,7 +27,7 @@ import { loadFavoritesView } from './favoriteView.js';
 const LOCAL_ADMIN_PASSWORD_FOR_CHECK = 'russelgay24';
 
 
-let allClanPokemonsCache = null;
+let allClanPokemonsCache = null; // Cache para modais de lista
 
 
 export function openAddPokemonModal() {
@@ -201,6 +200,7 @@ export async function handleDeleteTrainer(button) {
 }
 
 
+// <<< MODIFICADO: Busca histórico completo e renderiza itens com history.id >>>
 export async function openPartialReturnModal(groupIndex) {
     setActiveHistoryGroupIndex(groupIndex);
     clearPartialReturnSelection();
@@ -222,71 +222,72 @@ export async function openPartialReturnModal(groupIndex) {
     dom.partialReturnModal.style.display = 'flex';
 
     try {
-        const activeGroups = await fetchActiveHistory();
-        const group = activeGroups[groupIndex];
+        // Busca ambos: grupos ativos para pegar trainer/date e histórico completo para pegar IDs
+        const [activeGroups, fullHistory] = await Promise.all([fetchActiveHistory(), fetchAllHistory()]);
 
-        if (!group || !group.pokemons || !Array.isArray(group.pokemons)) {
-            displayError("Grupo de empréstimo não encontrado ou inválido.");
+        const targetGroup = activeGroups[groupIndex];
+
+        if (!targetGroup || !targetGroup.trainer_name || !targetGroup.date) {
+            displayError("Grupo de empréstimo ativo não encontrado ou inválido.");
             closePartialReturnModal(); return;
         }
 
+        // Filtra o histórico completo para encontrar as entradas EXATAS deste grupo ativo
+        const historyEntriesForGroup = fullHistory.filter(entry =>
+            !entry.returned && // Apenas os não devolvidos deste grupo
+            entry.trainer_id === targetGroup.trainer_id &&
+            entry.date === targetGroup.date
+        );
+
         listContainer.innerHTML = '';
 
-        if (group.pokemons.length === 0) {
-            listContainer.innerHTML = '<p class="empty-message">Nenhum Pokémon neste grupo.</p>';
+        if (historyEntriesForGroup.length === 0) {
+            listContainer.innerHTML = '<p class="empty-message">Nenhum Pokémon pendente neste grupo.</p>';
             if (selectAllCheckbox) selectAllCheckbox.disabled = true;
         } else {
             if (selectAllCheckbox) selectAllCheckbox.disabled = false;
 
-
-            const pokemonsByClan = group.pokemons.reduce((acc, pokemon) => {
-                const pokeName = pokemon?.name?.trim();
-                const clanName = pokemon?.clan || 'unknown';
-
-                if (!pokeName) {
-                    console.warn("Pokémon sem nome encontrado no grupo de devolução:", pokemon);
-                    return acc;
-                }
-
-                if (!acc[clanName]) {
-                    acc[clanName] = [];
-                }
-                acc[clanName].push(pokeName);
-                return acc;
+            // Agrupa por clã (opcional, mas mantém a UI)
+            const pokemonsByClan = historyEntriesForGroup.reduce((acc, entry) => {
+                 const clanName = entry?.clan_name || 'unknown';
+                 if (!acc[clanName]) {
+                     acc[clanName] = [];
+                 }
+                 // Guarda o objeto entry inteiro para ter acesso ao ID e nome
+                 acc[clanName].push(entry);
+                 return acc;
             }, {});
 
-
              const sortedClans = Object.keys(pokemonsByClan).sort((a, b) => {
-                 if (a === 'unknown') return 1;
-                 if (b === 'unknown') return -1;
+                 if (a === 'unknown') return 1; if (b === 'unknown') return -1;
                  return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
              });
-
 
              sortedClans.forEach(clanName => {
                  const clanHeader = document.createElement('div');
                  clanHeader.className = 'partial-return-clan-header';
                  clanHeader.textContent = clanName === 'unknown' ? 'Clã Desconhecido' : (clanName.charAt(0).toUpperCase() + clanName.slice(1));
-
                  const color = clanData[clanName]?.color || 'var(--text-medium)';
                  clanHeader.style.color = color;
                  listContainer.appendChild(clanHeader);
 
-
-                 pokemonsByClan[clanName].forEach(pokemonName => {
+                 pokemonsByClan[clanName].forEach(historyEntry => {
+                     if(!historyEntry || !historyEntry.id || !historyEntry.pokemon_name) {
+                         console.warn("Entrada de histórico inválida encontrada:", historyEntry); return;
+                     }
                      const item = document.createElement('div');
                      item.className = 'partial-return-item';
-                     item.dataset.pokemonName = pokemonName;
+                     item.dataset.historyId = historyEntry.id; // <<< USA history.id
 
                      const nameDiv = document.createElement('div');
                      nameDiv.className = 'pokemon-name';
-                     nameDiv.textContent = pokemonName;
+                     nameDiv.textContent = historyEntry.pokemon_name; // <<< Usa o nome do histórico
 
                      const checkbox = document.createElement('input');
                      checkbox.type = 'checkbox';
                      checkbox.className = 'partial-return-checkbox';
                      checkbox.dataset.action = 'toggle-partial-return';
-                     checkbox.dataset.pokemonName = pokemonName;
+                     checkbox.dataset.historyId = historyEntry.id; // <<< USA history.id
 
                      item.appendChild(nameDiv);
                      item.appendChild(checkbox);
@@ -301,23 +302,23 @@ export async function openPartialReturnModal(groupIndex) {
         console.error("Erro ao abrir modal de devolução parcial:", error);
         listContainer.innerHTML = '<p class="error-message">Erro ao carregar Pokémons.</p>';
         if (selectAllCheckbox) selectAllCheckbox.disabled = true;
-
     }
 }
 export function closePartialReturnModal() {
     if(dom.partialReturnModal) dom.partialReturnModal.style.display = 'none';
     if(dom.partialReturnListContainer) dom.partialReturnListContainer.innerHTML = '';
     setActiveHistoryGroupIndex(null);
-    clearPartialReturnSelection();
+    clearPartialReturnSelection(); // Limpa a seleção (que agora é de IDs)
     const passwordInput = document.getElementById('partialReturnPassword');
     if (passwordInput) passwordInput.value = '';
 }
+// <<< MODIFICADO: Usa historyId >>>
 export function handleTogglePartialReturn(checkbox) {
-    const pokemonName = checkbox.dataset.pokemonName;
+    const historyId = checkbox.dataset.historyId; // <<< Pega historyId
     const itemDiv = checkbox.closest('.partial-return-item');
-    if (!pokemonName || !itemDiv) return;
+    if (!historyId || !itemDiv) return;
 
-    togglePartialReturnSelection(pokemonName);
+    togglePartialReturnSelection(historyId); // <<< Passa historyId para o estado
     itemDiv.classList.toggle('selected', checkbox.checked);
 
     const allCheckboxes = dom.partialReturnListContainer?.querySelectorAll('.partial-return-checkbox');
@@ -339,6 +340,7 @@ export function handleTogglePartialReturn(checkbox) {
         selectAllCheckbox.indeterminate = true;
     }
 }
+// <<< MODIFICADO: Usa historyId >>>
 export function handleSelectAllPartialReturn() {
     const selectAllCheckbox = document.getElementById('selectAllPartialReturn');
     const allCheckboxes = dom.partialReturnListContainer?.querySelectorAll('.partial-return-checkbox');
@@ -351,10 +353,8 @@ export function handleSelectAllPartialReturn() {
     const shouldBeChecked = selectAllCheckbox.checked;
     let newSelectionState = {};
 
-    console.log(`Select All clicado. Novo estado deve ser: ${shouldBeChecked}`);
-
     allCheckboxes.forEach(checkbox => {
-        const pokemonName = checkbox.dataset.pokemonName;
+        const historyId = checkbox.dataset.historyId; // <<< Pega historyId
         const itemDiv = checkbox.closest('.partial-return-item');
 
         checkbox.checked = shouldBeChecked;
@@ -362,24 +362,26 @@ export function handleSelectAllPartialReturn() {
              itemDiv.classList.toggle('selected', shouldBeChecked);
         }
 
-        if (shouldBeChecked && pokemonName) {
-            newSelectionState[pokemonName] = true;
+        if (shouldBeChecked && historyId) {
+            newSelectionState[historyId] = true; // <<< Guarda historyId
         }
     });
 
-    setPartialReturnSelection(newSelectionState);
+    setPartialReturnSelection(newSelectionState); // <<< Atualiza estado com historyIds
     selectAllCheckbox.indeterminate = false;
-    console.log('Novo estado partialReturnSelection:', getState().partialReturnSelection);
+    // O log no state.js já foi adaptado
 }
+// <<< MODIFICADO: Lê seleção de IDs do estado, remove validação de discrepância >>>
 export async function handleConfirmPartialReturn() {
-    const selection = getState().partialReturnSelection;
-    const pokemonsToReturnNames = Object.keys(selection).filter(name => selection[name]);
+    // <<< Lê a seleção de History IDs diretamente do estado >>>
+    const historyEntryIdsToReturn = Object.keys(getState().partialReturnSelection);
     const passwordInput = document.getElementById('partialReturnPassword');
     const trainerPassword = passwordInput ? passwordInput.value : '';
 
-    if (pokemonsToReturnNames.length === 0) { displayError('Selecione pelo menos um Pokémon para devolver.'); return; }
+    if (historyEntryIdsToReturn.length === 0) { displayError('Selecione pelo menos um Pokémon para devolver.'); return; }
     if (!trainerPassword) { displayError('Por favor, digite sua senha de treinador para confirmar a devolução.'); if(passwordInput) passwordInput.focus(); return; }
 
+    // Não precisamos mais do groupIndex aqui, mas mantemos caso precise no futuro
     const groupIndex = getState().activeHistoryGroupIndex;
     if (groupIndex === null) { displayError("Erro interno: Grupo de histórico não identificado."); return; }
 
@@ -388,33 +390,12 @@ export async function handleConfirmPartialReturn() {
     showSpinner();
 
     try {
-        const fullHistory = await fetchAllHistory();
-        const activeGroups = await fetchActiveHistory();
-        const targetGroup = activeGroups[groupIndex];
-
-        if (!targetGroup || !targetGroup.trainer_name || !targetGroup.date) {
-             hideSpinner(); displayError("Erro ao revalidar grupo de histórico ativo."); closePartialReturnModal(); return;
-        }
-
-        const historyEntryIdsToReturn = fullHistory
-            .filter(entry =>
-                !entry.returned &&
-                entry.trainer_id === targetGroup.trainer_id &&
-                entry.date === targetGroup.date &&
-                pokemonsToReturnNames.includes(entry.pokemon_name)
-            )
-            .map(entry => entry.id);
-
-        if (historyEntryIdsToReturn.length !== pokemonsToReturnNames.length) {
-             console.warn("Discrepância entre Pokémons selecionados e IDs encontrados no histórico.", { selected: pokemonsToReturnNames, foundIds: historyEntryIdsToReturn });
-             hideSpinner(); displayError('Erro ao mapear seleção para registros do histórico. A lista pode estar desatualizada.');
-             renderActivePokemons();
-             closePartialReturnModal();
-             if (confirmButton) confirmButton.disabled = false;
-             return;
-        }
+        // <<< REMOVIDO: Busca de fullHistory e activeGroups aqui >>>
+        // <<< REMOVIDO: Lógica de filtragem para encontrar IDs (já temos os IDs selecionados) >>>
+        // <<< REMOVIDO: Verificação de discrepância (historyEntryIdsToReturn.length !== pokemonsToReturnNames.length) >>>
 
         if (historyEntryIdsToReturn.length === 0) {
+             // Este caso não deve ocorrer devido à checagem inicial, mas mantido por segurança
              hideSpinner(); displayError('Não foi possível encontrar os registros correspondentes para devolução.');
              closePartialReturnModal();
              renderActivePokemons();
@@ -422,8 +403,9 @@ export async function handleConfirmPartialReturn() {
              return;
         }
 
-        console.log(`[Partial Return] IDs a devolver: ${historyEntryIdsToReturn.join(', ')}`);
+        console.log(`[Partial Return] IDs de histórico a devolver: ${historyEntryIdsToReturn.join(', ')}`);
 
+        // <<< Envia os IDs de histórico selecionados diretamente >>>
         const result = await returnMultiplePokemonAPI(historyEntryIdsToReturn, trainerPassword);
         hideSpinner();
 
@@ -437,9 +419,11 @@ export async function handleConfirmPartialReturn() {
             displayError('Senha do treinador inválida. Nenhum Pokémon foi devolvido.');
             if(passwordInput) passwordInput.focus();
         } else {
+            // Exibe outros erros da API (ex: "Nenhum registro válido...")
             displayError(error.message || "Ocorreu um erro inesperado durante a devolução.");
         }
     } finally {
+         // Sempre atualiza as visualizações
          renderActivePokemons();
          const currentViewClan = getState().currentClan;
          if (currentViewClan !== 'home' && currentViewClan !== 'favorites') {
@@ -450,6 +434,7 @@ export async function handleConfirmPartialReturn() {
 }
 
 
+// --- Funções de Listas Favoritas (sem alterações nesta seção) ---
 async function loadAllClanPokemonsForModal() {
     if (allClanPokemonsCache) {
         return allClanPokemonsCache;
@@ -461,18 +446,15 @@ async function loadAllClanPokemonsForModal() {
         return allClanPokemonsCache;
     } catch (error) {
         console.error("Erro ao buscar todos os Pokémons por clã para o modal:", error);
-        allClanPokemonsCache = null; // Limpa em caso de erro
-        throw error; // Propaga o erro
+        allClanPokemonsCache = null;
+        throw error;
     }
 }
-
-// <<< MODIFICADO: Lê seleção do estado global, parâmetro selectedPokemonIds removido >>>
 function renderPokemonSelectionList(container, allClanPokemons, searchString = '') {
     if (!container) { console.error("Container de seleção não fornecido."); return; }
     container.innerHTML = '';
     const lowerSearch = searchString.toLowerCase().trim();
     let countRendered = 0;
-    // <<< Lê a seleção atual do estado global do modal >>>
     const currentModalSelection = getState().modalPokemonSelection;
 
     console.log(`Renderizando lista para modal. Busca: "${lowerSearch}". Seleção global modal:`, currentModalSelection);
@@ -494,7 +476,6 @@ function renderPokemonSelectionList(container, allClanPokemons, searchString = '
 
             filteredPokemons.forEach(pokemon => {
                 countRendered++;
-                // <<< Usa a seleção do estado global >>>
                 const isSelected = currentModalSelection[pokemon.id];
                 const isAvailable = pokemon.status === 'available';
 
@@ -504,7 +485,7 @@ function renderPokemonSelectionList(container, allClanPokemons, searchString = '
 
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
-                checkbox.checked = !!isSelected; // Garante que seja booleano
+                checkbox.checked = !!isSelected;
                 checkbox.id = `modal-poke-${pokemon.id}`;
                 checkbox.dataset.pokemonId = pokemon.id;
 
@@ -526,15 +507,10 @@ function renderPokemonSelectionList(container, allClanPokemons, searchString = '
         container.innerHTML = '<p class="empty-message">Nenhum Pokémon encontrado.</p>';
     }
 }
-
-// <<< FUNÇÃO REMOVIDA/REDUNDANTE: A seleção agora é lida do estado global >>>
-// function getSelectedPokemonIdsFromModal(container) { ... }
-
 export async function openCreateListModal() {
     if (!dom.createListModal || !dom.createListForm || !dom.createListPokemonSelection || !dom.newListNameInput || !dom.createListPokemonSearch) {
         console.error("Elementos do modal de criar lista não encontrados."); return;
     }
-    // <<< Limpa o estado de seleção do modal >>>
     clearModalPokemonSelection();
     dom.createListForm.reset();
     dom.createListPokemonSelection.innerHTML = '<p class="loading-message">Carregando Pokémons...</p>';
@@ -543,7 +519,6 @@ export async function openCreateListModal() {
 
     try {
         const pokemons = await loadAllClanPokemonsForModal();
-        // <<< Não passa mais a seleção, a função lê do estado >>>
         renderPokemonSelectionList(dom.createListPokemonSelection, pokemons);
     } catch (error) {
         dom.createListPokemonSelection.innerHTML = '<p class="error-message">Erro ao carregar Pokémons.</p>';
@@ -551,23 +526,18 @@ export async function openCreateListModal() {
 }
 export function closeCreateListModal() {
     if (dom.createListModal) dom.createListModal.style.display = 'none';
-    // <<< Limpa o estado de seleção do modal ao fechar >>>
     clearModalPokemonSelection();
 }
-// <<< MODIFICADO: Não lê mais a seleção do DOM antes de renderizar >>>
 export function handleCreateListPokemonSearch() {
     if (!dom.createListPokemonSearch || !dom.createListPokemonSelection || !allClanPokemonsCache) return;
     const searchTerm = dom.createListPokemonSearch.value;
-    // <<< Renderiza usando a seleção do estado global (lida internamente pela função) >>>
     renderPokemonSelectionList(dom.createListPokemonSelection, allClanPokemonsCache, searchTerm);
 }
-// <<< MODIFICADO: Lê a seleção final do estado global >>>
 export async function handleCreateListSubmit(event) {
     event.preventDefault();
     if (!dom.newListNameInput || !dom.confirmCreateListButton || !document.getElementById('createListTrainerPassword')) return;
 
     const listName = dom.newListNameInput.value.trim();
-    // <<< Lê a seleção do estado global >>>
     const selectedPokemonIds = Object.keys(getState().modalPokemonSelection);
     const trainerPassword = document.getElementById('createListTrainerPassword').value;
 
@@ -582,7 +552,7 @@ export async function handleCreateListSubmit(event) {
         const result = await createFavoriteList(listName, selectedPokemonIds, trainerPassword);
         hideSpinner();
         displaySuccess(result.message || `Lista "${listName}" criada com sucesso!`);
-        closeCreateListModal(); // Já limpa o estado modalPokemonSelection
+        closeCreateListModal();
         loadFavoritesView();
     } catch (error) {
         hideSpinner();
@@ -591,13 +561,10 @@ export async function handleCreateListSubmit(event) {
         if (dom.confirmCreateListButton) dom.confirmCreateListButton.disabled = false;
     }
 }
-
-
 export async function openViewEditListModal(listId) {
      if (!dom.viewEditListModal || !dom.editListForm || !dom.editListIdInput || !dom.editListNameInput || !dom.editListPokemonSelection || !dom.editListPokemonSearch || !document.getElementById('editListTrainerPassword')) {
         console.error("Elementos do modal de editar lista não encontrados."); return;
     }
-    // <<< Limpa o estado de seleção do modal ANTES de popular >>>
     clearModalPokemonSelection();
     dom.editListForm.reset();
     dom.editListPokemonSearch.value = '';
@@ -614,12 +581,10 @@ export async function openViewEditListModal(listId) {
         dom.editListNameInput.value = listDetails.name;
         document.getElementById('editListTrainerPassword').value = '';
 
-        // <<< Popula o estado global modalPokemonSelection com os IDs da lista >>>
         const initialSelection = {};
         listDetails.pokemons.forEach(p => { initialSelection[p.id] = true; });
         setModalPokemonSelection(initialSelection);
 
-        // <<< Renderiza usando a seleção do estado global (lida internamente) >>>
         renderPokemonSelectionList(dom.editListPokemonSelection, allPokemons);
 
         dom.editListNameInput.focus();
@@ -632,30 +597,23 @@ export async function openViewEditListModal(listId) {
 }
 export function closeViewEditListModal() {
      if (dom.viewEditListModal) dom.viewEditListModal.style.display = 'none';
-     // <<< Limpa o estado de seleção do modal ao fechar >>>
      clearModalPokemonSelection();
 }
-// <<< MODIFICADO: Não lê mais a seleção do DOM antes de renderizar >>>
 export function handleEditListPokemonSearch() {
     if (!dom.editListPokemonSearch || !dom.editListPokemonSelection || !allClanPokemonsCache) return;
     const searchTerm = dom.editListPokemonSearch.value;
-    // <<< Renderiza usando a seleção do estado global (lida internamente) >>>
     renderPokemonSelectionList(dom.editListPokemonSelection, allClanPokemonsCache, searchTerm);
 }
-// <<< MODIFICADO: Lê a seleção final do estado global >>>
 export async function handleUpdateListSubmit(event) {
     event.preventDefault();
     if (!dom.editListIdInput || !dom.editListNameInput || !dom.confirmEditListButton || !document.getElementById('editListTrainerPassword')) return;
 
     const listId = dom.editListIdInput.value;
     const newName = dom.editListNameInput.value.trim();
-    // <<< Lê a seleção do estado global >>>
     const newPokemonIds = Object.keys(getState().modalPokemonSelection);
     const trainerPassword = document.getElementById('editListTrainerPassword').value;
 
     if (!newName) { displayError("O nome da lista é obrigatório."); dom.editListNameInput.focus(); return; }
-    // Permite salvar lista vazia, se o usuário desmarcar todos
-    // if (newPokemonIds.length === 0) { displayError("Selecione pelo menos um Pokémon para a lista."); return; }
     if (!trainerPassword) { displayError("A senha do treinador é obrigatória para editar a lista."); document.getElementById('editListTrainerPassword').focus(); return; }
 
     dom.confirmEditListButton.disabled = true;
@@ -665,7 +623,7 @@ export async function handleUpdateListSubmit(event) {
         const result = await updateFavoriteList(listId, { name: newName, pokemonIds: newPokemonIds }, trainerPassword);
         hideSpinner();
         displaySuccess(result.message || `Lista "${newName}" atualizada com sucesso!`);
-        closeViewEditListModal(); // Já limpa o estado modalPokemonSelection
+        closeViewEditListModal();
         loadFavoritesView();
     } catch (error) {
         hideSpinner();
@@ -674,8 +632,6 @@ export async function handleUpdateListSubmit(event) {
         if (dom.confirmEditListButton) dom.confirmEditListButton.disabled = false;
     }
 }
-
-
 export async function openBorrowListModal(listId, listName) {
     if (!dom.borrowListModal || !dom.borrowListModalTitle || !dom.borrowListIdInput || !dom.borrowListPokemonsPreview || !dom.borrowListTrainerPasswordInput || !dom.borrowListCommentInput) {
         console.error("Elementos do modal de usar lista não encontrados."); return;

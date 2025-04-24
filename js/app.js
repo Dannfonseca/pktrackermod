@@ -7,14 +7,17 @@
  * Inclui funcionalidade de alternância de tema (dark/light) e modal de gerenciamento de treinadores.
  * Conecta os botões da seção de Listas Favoritas aos seus respectivos modais.
  * Adicionado listener para o checkbox "Selecionar Todos" no modal de devolução parcial.
- * <<< MODIFICADO: Listeners dos checkboxes nos modais de lista (criar/editar) agora atualizam o estado global 'modalPokemonSelection'. >>>
+ * Listeners dos checkboxes nos modais de lista (criar/editar) agora atualizam o estado global 'modalPokemonSelection'.
+ * Removida a limpeza da seleção principal (selectedPokemons) ao trocar para uma Clan View, permitindo seleção entre clãs.
+ * <<< MODIFICADO: Adiciona listeners para paginação do histórico e reseta página nos filtros. >>>
  */
 import { dom } from './domElements.js';
-import { getState, setCurrentClan, clearSelectedPokemons, addModalPokemonSelection, removeModalPokemonSelection } from './state.js'; // <<< Adicionado addModalPokemonSelection, removeModalPokemonSelection >>>
+import { getState, setCurrentClan, clearSelectedPokemons, addModalPokemonSelection, removeModalPokemonSelection, setHistoryCurrentPage } from './state.js'; // <<< Importa setHistoryCurrentPage >>>
 import { updateClanStyles, toggleSidebar, closeSidebar, checkScreenSize, displayError } from './ui.js';
 import { loadClanView, handleTogglePokemonSelection, handleSelectEntireBag, handleConfirmSelection, handleDeletePokemon } from './clanView.js';
 import { loadHomeView, renderActivePokemons, handleOpenReturnModal } from './homeView.js';
-import { openHistoryModal, closeHistoryModal, filterAndRenderHistory, handleDeleteHistoryGroup, handleDeleteAllHistory, clearHistoryCache } from './history.js';
+// <<< Importa handlers de paginação >>>
+import { openHistoryModal, closeHistoryModal, filterAndRenderHistory, handleDeleteHistoryGroup, handleDeleteAllHistory, clearHistoryCache, handleHistoryPrevPage, handleHistoryNextPage } from './history.js';
 import {
     openAddPokemonModal, closeAddPokemonModal, handleAddPokemonFormSubmit,
     openPartialReturnModal, closePartialReturnModal, handleTogglePartialReturn, handleConfirmPartialReturn, handleSelectAllPartialReturn,
@@ -61,6 +64,7 @@ export function switchView(viewName) {
     const isFavorites = viewName === 'favorites';
     const isClan = !isHome && !isFavorites;
 
+
     if (isClan) setCurrentClan(viewName);
     else setCurrentClan('home');
 
@@ -74,17 +78,18 @@ export function switchView(viewName) {
         displayError("Erro ao carregar a interface."); return;
     }
 
+
     updateClanStyles(isClan ? viewName : 'home');
 
 
     if (isClan) {
-        clearSelectedPokemons();
         loadClanView(viewName).catch(error => { console.error(`Erro ao carregar clã ${viewName}:`, error); switchView('home'); });
     } else if (isFavorites) {
         loadFavoritesView().catch(error => { console.error("Erro ao carregar favoritos:", error); switchView('home'); });
     } else {
         loadHomeView().catch(error => { console.error("Erro ao carregar home:", error); });
     }
+
 
     if (window.innerWidth < 768) closeSidebar();
     window.scrollTo(0, 0);
@@ -109,7 +114,7 @@ function setupEventListeners() {
         dom.clanButtons.forEach(button => {
             if (button) {
                 const viewTarget = button.dataset.clan || 'home';
-                if (button.dataset.view !== 'favorites') {
+                if (viewTarget !== 'favorites') {
                      button.addEventListener('click', () => switchView(viewTarget));
                 }
             }
@@ -227,16 +232,39 @@ function setupEventListeners() {
         console.warn("Checkbox #selectAllPartialReturn não encontrado para adicionar listener.");
     }
 
-    if(dom.historySearchInput) dom.historySearchInput.addEventListener('input', filterAndRenderHistory);
-    if(dom.historyFilterSelect) dom.historyFilterSelect.addEventListener('change', filterAndRenderHistory);
+    // <<< MODIFICADO: Filtros do histórico agora resetam para a página 1 >>>
+    if(dom.historySearchInput) dom.historySearchInput.addEventListener('input', () => {
+        setHistoryCurrentPage(1); // Reseta a página
+        filterAndRenderHistory();
+    });
+    if(dom.historyFilterSelect) dom.historyFilterSelect.addEventListener('change', () => {
+        setHistoryCurrentPage(1); // Reseta a página
+        filterAndRenderHistory();
+    });
+    // <<< FIM DA MODIFICAÇÃO FILTROS >>>
+
     if(dom.deleteAllHistoryButton) dom.deleteAllHistoryButton.addEventListener('click', handleDeleteAllHistory);
-    if(dom.historyListContainer) dom.historyListContainer.addEventListener('click', (e) => { const btn = e.target.closest('.delete-button[data-action="delete-history-group"]'); if(btn) handleDeleteHistoryGroup(btn); });
+    // <<< MODIFICADO: Delegação para botões de deleção E paginação >>>
+    if(dom.historyModal) { // Adiciona listener ao corpo do modal
+        dom.historyModal.addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.delete-button[data-action="delete-history-group"]');
+            const prevBtn = e.target.closest('.pagination-button[data-action="history-prev"]');
+            const nextBtn = e.target.closest('.pagination-button[data-action="history-next"]');
+
+            if(deleteBtn) handleDeleteHistoryGroup(deleteBtn);
+            else if (prevBtn) handleHistoryPrevPage();
+            else if (nextBtn) handleHistoryNextPage();
+        });
+    } else {
+        console.error("Modal de histórico não encontrado para adicionar listeners delegados.");
+    }
+    // <<< FIM DA MODIFICAÇÃO HISTÓRICO >>>
+
     if(dom.openAddTrainerModalButton) dom.openAddTrainerModalButton.addEventListener('click', openAddTrainerModal);
     if(dom.trainerListContainer) dom.trainerListContainer.addEventListener('click', (e) => { const btn = e.target.closest('.delete-button.small-delete-button'); if(btn) handleDeleteTrainer(btn); });
 
     if(dom.createListForm) dom.createListForm.addEventListener('submit', handleCreateListSubmit);
     if(dom.createListPokemonSearch) dom.createListPokemonSearch.addEventListener('input', handleCreateListPokemonSearch);
-    // <<< MODIFICADO: Atualiza o estado modalPokemonSelection ao marcar/desmarcar >>>
     if(dom.createListPokemonSelection) {
         dom.createListPokemonSelection.addEventListener('change', (e) => {
             if(e.target.matches('input[type="checkbox"]')) {
@@ -247,7 +275,6 @@ function setupEventListeners() {
                 } else {
                     removeModalPokemonSelection(pokemonId);
                 }
-                // Marca visualmente o item pai (opcional, pode ser feito em CSS)
                 const itemDiv = e.target.closest('.modal-pokemon-item');
                 if (itemDiv) itemDiv.classList.toggle('selected', e.target.checked);
             }
@@ -257,7 +284,6 @@ function setupEventListeners() {
 
     if(dom.editListForm) dom.editListForm.addEventListener('submit', handleUpdateListSubmit);
     if(dom.editListPokemonSearch) dom.editListPokemonSearch.addEventListener('input', handleEditListPokemonSearch);
-    // <<< MODIFICADO: Atualiza o estado modalPokemonSelection ao marcar/desmarcar >>>
     if(dom.editListPokemonSelection) {
          dom.editListPokemonSelection.addEventListener('change', (e) => {
             if(e.target.matches('input[type="checkbox"]')) {
@@ -268,7 +294,6 @@ function setupEventListeners() {
                 } else {
                     removeModalPokemonSelection(pokemonId);
                 }
-                 // Marca visualmente o item pai (opcional, pode ser feito em CSS)
                  const itemDiv = e.target.closest('.modal-pokemon-item');
                  if (itemDiv) itemDiv.classList.toggle('selected', e.target.checked);
             }
