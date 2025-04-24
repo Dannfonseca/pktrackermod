@@ -8,8 +8,8 @@
  */
 
 // URL para a API rodando localmente
-//export const API_BASE_URL = 'https://poketrackerapi.onrender.com';
-export const API_BASE_URL = 'http://localhost:3000';
+export const API_BASE_URL = 'https://poketrackerapi.onrender.com';
+//export const API_BASE_URL = 'http://localhost:3000';
 
 // Dados estáticos dos clãs para o frontend
 export const clanData = {
