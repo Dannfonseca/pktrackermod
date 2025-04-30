@@ -9,10 +9,11 @@
  * Adicionado listener para o checkbox "Selecionar Todos" no modal de devolução parcial.
  * Listeners dos checkboxes nos modais de lista (criar/editar) agora atualizam o estado global 'modalPokemonSelection'.
  * Removida a limpeza da seleção principal (selectedPokemons) ao trocar para uma Clan View, permitindo seleção entre clãs.
- * <<< MODIFICADO: Adiciona listeners para paginação do histórico e reseta página nos filtros. >>>
+ * MODIFICADO: Adiciona listeners para paginação do histórico e reseta página nos filtros.
+ * MODIFICADO: Adiciona lógica de scroll para ocultar/exibir o header.
  */
 import { dom } from './domElements.js';
-import { getState, setCurrentClan, clearSelectedPokemons, addModalPokemonSelection, removeModalPokemonSelection, setHistoryCurrentPage } from './state.js'; // <<< Importa setHistoryCurrentPage >>>
+import { getState, setCurrentClan, clearSelectedPokemons, addModalPokemonSelection, removeModalPokemonSelection, setHistoryCurrentPage, setModalPokemonSelection } from './state.js'; // <<< Importa setHistoryCurrentPage e setModalPokemonSelection
 import { updateClanStyles, toggleSidebar, closeSidebar, checkScreenSize, displayError } from './ui.js';
 import { loadClanView, handleTogglePokemonSelection, handleSelectEntireBag, handleConfirmSelection, handleDeletePokemon } from './clanView.js';
 import { loadHomeView, renderActivePokemons, handleOpenReturnModal } from './homeView.js';
@@ -95,6 +96,35 @@ export function switchView(viewName) {
     window.scrollTo(0, 0);
 }
 
+// <<< VARIÁVEIS GLOBAIS para controle de scroll >>>
+let lastScrollTop = 0;
+let isScrolling;
+
+// <<< FUNÇÃO MODIFICADA para controlar APENAS o header >>>
+function handleScroll() {
+    const headerElement = document.querySelector('.header'); // Busca o header
+    if (!headerElement) return;
+
+    let st = window.pageYOffset || document.documentElement.scrollTop;
+
+    // Limpa timeout existente - Não estritamente necessário aqui, mas mantido
+    window.clearTimeout(isScrolling);
+    // document.body.classList.add('is-scrolling'); // Opcional: Classe para indicar scroll
+
+    if (st > lastScrollTop && st > 100) { // Scroll para baixo e passou de 100px
+        headerElement.classList.add('header-hidden');
+    } else if (st < lastScrollTop) { // Scroll para cima
+        headerElement.classList.remove('header-hidden');
+    }
+
+    lastScrollTop = st <= 0 ? 0 : st; // Para Mobile ou negative scrolling
+
+    // // Opcional: Timeout para remover a classe 'is-scrolling'
+    // isScrolling = setTimeout(() => {
+    //     document.body.classList.remove('is-scrolling');
+    // }, 150);
+}
+// <<< FIM MODIFICAÇÃO SCROLL >>>
 
 function setupEventListeners() {
     console.log("Configurando event listeners...");
@@ -305,6 +335,8 @@ function setupEventListeners() {
 
 
     window.addEventListener('resize', checkScreenSize);
+    // <<< Adiciona listener de scroll >>>
+    window.addEventListener('scroll', handleScroll, { passive: true }); // Use passive: true para melhor performance
 
     console.log("Event listeners configurados.");
 }

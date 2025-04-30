@@ -5,22 +5,30 @@ entre os clãs e a home. Define seu posicionamento (fixo), aparência,
 transição para exibição em mobile, e estilos para os botões de clã,
 incluindo os estados hover e ativo (com cores específicas do clã).
 Também inclui estilos para o overlay escuro que aparece em mobile.
+Adicionado border-radius e box-shadow.
 */
 
 
 .sidebar {
     position: fixed;
     top: 0;
-    left: -260px;
-    width: 250px;
+    left: -260px; /* Escondido fora da tela */
+    width: 250px; /* <<< Largura Original */
     height: 100%;
     background-color: var(--bg-white);
     border-right: 1px solid var(--border-light);
-    box-shadow: 3px 0px 15px rgba(0,0,0,0.05);
+    box-shadow: 2px 0px 5px rgba(0,0,0,0.05); /* Sombra leve para separação */
     z-index: 1000;
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Transição apenas no 'left' para mobile */
     overflow-y: auto;
     padding-top: 60px;
+    border-top-right-radius: var(--radius); /* Canto superior direito arredondado */
+    border-bottom-right-radius: var(--radius); /* Canto inferior direito arredondado */
+}
+
+/* Sombra no modo escuro */
+body.dark-mode .sidebar {
+    box-shadow: 2px 0px 8px rgba(255,255,255,0.04);
 }
 
 
@@ -61,6 +69,7 @@ Também inclui estilos para o overlay escuro que aparece em mobile.
     height: 60px;
     background-color: var(--bg-white);
     z-index: 1;
+    /* A sidebar tem radius, então o header fixo dentro dela não precisa */
 }
 .sidebar-header h2 {
     font-size: 1.1rem;
@@ -130,17 +139,25 @@ Também inclui estilos para o overlay escuro que aparece em mobile.
     opacity: 0.8;
 }
 
-.clan-button.active[style*="color"] {
-     background-color: var(--bg-light);
+/* Ajusta fundo para clãs coloridos quando ativos */
+.clan-button.active[style*="--hover-color"] {
+    background-color: color-mix(in srgb, var(--hover-color) 8%, transparent);
+}
+/* Ajuste para dark mode */
+body.dark-mode .clan-button.active {
+    background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+body.dark-mode .clan-button.active[style*="--hover-color"] {
+    background-color: color-mix(in srgb, var(--hover-color) 10%, transparent);
 }
 
 
 
 @media (min-width: 768px) {
     .sidebar {
-        left: 0;
-        box-shadow: none;
-        padding-top: 1rem;
+        left: 0; /* Sidebar visível por padrão no desktop */
+        /* Mantém a sombra para separação */
+        padding-top: 1rem; /* Remove padding do header que não existe mais */
     }
     .sidebar-header {
         display: none;

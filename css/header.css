@@ -4,6 +4,7 @@ Estilos para o cabeçalho fixo no topo da aplicação.
 Contém o logo, o botão de menu (hamburguer) para mobile,
 e botões de ação (Listas, Treinadores, Histórico, Tema).
 Botões de ação agora são apenas ícones em todas as telas, com tamanho e cor uniformes.
+Adicionado border-radius e transição para ocultar ao rolar.
 */
 .header {
     background-color: var(--bg-white);
@@ -15,12 +16,19 @@ Botões de ação agora são apenas ícones em todas as telas, com tamanho e cor
     z-index: 50; /* Z-index menor que sidebar e modais */
     height: 60px;
     border-bottom: 1px solid var(--border-light);
-    transition: var(--transition-theme);
+    transition: var(--transition-theme), transform 0.3s ease-out; /* Adicionada transição para transform */
+    border-bottom-left-radius: var(--radius); /* Canto inferior esquerdo arredondado */
+    border-bottom-right-radius: var(--radius); /* Canto inferior direito arredondado */
 }
 
 body.dark-mode .header {
      box-shadow: 0 1px 3px rgba(255,255,255,0.05);
      border-bottom-color: var(--border-light);
+}
+
+/* Classe para esconder o header */
+.header-hidden {
+    transform: translateY(-100%);
 }
 
 

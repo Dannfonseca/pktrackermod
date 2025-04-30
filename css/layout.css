@@ -5,9 +5,10 @@ o posicionamento e espaçamento do conteúdo principal (`.main-content`)
 em relação ao cabeçalho e à barra lateral (sidebar), e o padding
 padrão das seções (`.section`). Ajusta a margem esquerda do conteúdo
 principal em telas maiores para acomodar a sidebar fixa.
+Ajustado padding-top para header fixo.
 */
 .main-content {
-    padding-top: 76px;
+    padding-top: 70px; /* Altura do header (60px) + 10px buffer */
     min-height: calc(100vh - 60px);
     transition: margin-left var(--transition);
     margin-left: 0;
@@ -27,7 +28,7 @@ principal em telas maiores para acomodar a sidebar fixa.
 
 @media (min-width: 768px) {
     .main-content {
-        margin-left: 250px;
+        margin-left: 250px; /* <<< Largura Original da Sidebar */
     }
 }
 
@@ -41,6 +42,9 @@ principal em telas maiores para acomodar a sidebar fixa.
     }
      .section {
         padding: 1.5rem 0;
+    }
+    .main-content {
+        padding-top: 70px; /* Mantém padding mesmo em mobile se header for fixo */
     }
 }
 
